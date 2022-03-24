@@ -1,4 +1,3 @@
-import React from 'react';
 import { Routes, Route, Link } from "react-router-dom";
 import { useSelector } from "react-redux";
 
@@ -9,16 +8,16 @@ import classNames from "classnames";
 
 function App() {
 
-  const navHidden: number = useSelector((state:{navHidden:number}) => {return state.navHidden});
+  const navHidden: number = useSelector((state: { navHidden: number }) => { return state.navHidden });
   return (
     <div className="App torq">
-      <div className={classNames("main-content-wrapper", {'nav-hidden': navHidden})}>
+      <div className={classNames("main-content-wrapper", { 'nav-hidden': navHidden })}>
         <div className="navigation-wrapper">
-          <Navigation/>
+          <Navigation />
         </div>
         <div className="page-wrapper">
           <Routes>
-            <Route path="/" element={<TablePage/>} />
+            <Route path="/" element={<TablePage />} />
           </Routes>
         </div>
       </div>
