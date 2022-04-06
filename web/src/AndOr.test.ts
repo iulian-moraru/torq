@@ -1,60 +1,53 @@
-import { Clause, ClauseType, processQuery } from "./andornot"
-
-
-
-
-
-
-
+import { AndClause, OrClause, FilterClause, processQuery } from "./andornot"
 
 test('simplest query returns false', () => {
-  const simplestClauseFalse = new Clause(ClauseType.filter, false)
+  const simplestClauseFalse = new FilterClause(false)
   const result = processQuery(simplestClauseFalse)
   expect(result).toBe(false);
 });
 
 test('simplest AND query returns false', () => {
-  const simpleAndClauseReturnFalse = new Clause(ClauseType.and)
-  simpleAndClauseReturnFalse.addChildClause(new Clause(ClauseType.filter, false))
-  simpleAndClauseReturnFalse.addChildClause(new Clause(ClauseType.filter, true))
+  const simpleAndClauseReturnFalse = new AndClause()
+  simpleAndClauseReturnFalse.addChildClause(new FilterClause(false))
+  simpleAndClauseReturnFalse.addChildClause(new FilterClause(true))
   const result = processQuery(simpleAndClauseReturnFalse)
   expect(result).toBe(false);
 });
 
 test('simplest AND query returns true', () => {
-  const simpleAndClauseReturnTrue = new Clause(ClauseType.and)
-  simpleAndClauseReturnTrue.addChildClause(new Clause(ClauseType.filter, true))
-  simpleAndClauseReturnTrue.addChildClause(new Clause(ClauseType.filter, true))
+  const simpleAndClauseReturnTrue = new AndClause()
+  simpleAndClauseReturnTrue.addChildClause(new FilterClause(true))
+  simpleAndClauseReturnTrue.addChildClause(new FilterClause(true))
   const result = processQuery(simpleAndClauseReturnTrue)
   expect(result).toBe(true);
 });
 
 test('simplest OR query returns true', () => {
-  const clauseOrReturnTrue = new Clause(ClauseType.or)
-  clauseOrReturnTrue.addChildClause(new Clause(ClauseType.filter, true))
-  clauseOrReturnTrue.addChildClause(new Clause(ClauseType.filter, false))
+  const clauseOrReturnTrue = new OrClause()
+  clauseOrReturnTrue.addChildClause(new FilterClause(true))
+  clauseOrReturnTrue.addChildClause(new FilterClause(false))
   const result = processQuery(clauseOrReturnTrue)
   expect(result).toBe(true);
 });
 
 test('simplest OR query returns false', () => {
-  const clauseOrReturnFalse = new Clause(ClauseType.or)
-  clauseOrReturnFalse.addChildClause(new Clause(ClauseType.filter, false))
-  clauseOrReturnFalse.addChildClause(new Clause(ClauseType.filter, false))
+  const clauseOrReturnFalse = new OrClause()
+  clauseOrReturnFalse.addChildClause(new FilterClause(false))
+  clauseOrReturnFalse.addChildClause(new FilterClause(false))
   const result = processQuery(clauseOrReturnFalse);
   expect(result).toBe(false);
 });
 
 test('complex query returns true', () => {
-  const simpleAndClauseReturnFalse = new Clause(ClauseType.and)
-  simpleAndClauseReturnFalse.addChildClause(new Clause(ClauseType.filter, false))
-  simpleAndClauseReturnFalse.addChildClause(new Clause(ClauseType.filter, true))
+  const simpleAndClauseReturnFalse = new AndClause()
+  simpleAndClauseReturnFalse.addChildClause(new FilterClause(false))
+  simpleAndClauseReturnFalse.addChildClause(new FilterClause(true))
 
-  const simpleAndClauseReturnTrue = new Clause(ClauseType.and)
-  simpleAndClauseReturnTrue.addChildClause(new Clause(ClauseType.filter, true))
-  simpleAndClauseReturnTrue.addChildClause(new Clause(ClauseType.filter, true))
+  const simpleAndClauseReturnTrue = new AndClause()
+  simpleAndClauseReturnTrue.addChildClause(new FilterClause(true))
+  simpleAndClauseReturnTrue.addChildClause(new FilterClause(true))
 
-  const multiClauseReturnTrue = new Clause(ClauseType.or)
+  const multiClauseReturnTrue = new OrClause()
   multiClauseReturnTrue.addChildClause(simpleAndClauseReturnTrue)
   multiClauseReturnTrue.addChildClause(simpleAndClauseReturnFalse)
 
@@ -62,17 +55,16 @@ test('complex query returns true', () => {
   expect(result).toBe(true);
 });
 
-
 test('complex query returns false', () => {
-  const simpleAndClauseReturnFalse = new Clause(ClauseType.and)
-  simpleAndClauseReturnFalse.addChildClause(new Clause(ClauseType.filter, false))
-  simpleAndClauseReturnFalse.addChildClause(new Clause(ClauseType.filter, true))
+  const simpleAndClauseReturnFalse = new AndClause()
+  simpleAndClauseReturnFalse.addChildClause(new FilterClause(false))
+  simpleAndClauseReturnFalse.addChildClause(new FilterClause(true))
 
-  const clauseOrReturnFalse = new Clause(ClauseType.or)
-  clauseOrReturnFalse.addChildClause(new Clause(ClauseType.filter, false))
-  clauseOrReturnFalse.addChildClause(new Clause(ClauseType.filter, false))
+  const clauseOrReturnFalse = new OrClause()
+  clauseOrReturnFalse.addChildClause(new FilterClause(false))
+  clauseOrReturnFalse.addChildClause(new FilterClause(false))
 
-  const multiClauseReturnFalse = new Clause(ClauseType.or)
+  const multiClauseReturnFalse = new OrClause()
   multiClauseReturnFalse.addChildClause(clauseOrReturnFalse)
   multiClauseReturnFalse.addChildClause(simpleAndClauseReturnFalse)
 
