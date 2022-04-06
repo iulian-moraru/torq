@@ -83,5 +83,21 @@ const processQuery = (query: any): boolean => {
   return clonedQuery.result
 }
 
+const deserialiseQuery = (query: any): Clause => {
+  if (Object.keys(query)[0] === "$filter") {
+    return new FilterClause(query.$filter)
+  }
+  if (Object.keys(query)[0] === "$and") {
+    return new AndClause(query.$and.map((subclause: Clause) => deserialiseQuery(subclause)))
+  }
+  if (Object.keys(query)[0] === "$or") {
+    return new OrClause(query.$or.map((subclause: Clause) => deserialiseQuery(subclause)))
+  }
+  throw new Error("Expected JSON to contain $filter, $or or $and")
+}
 
-export { FilterClause, OrClause, AndClause, processQuery }
+const deserialiseQueryJSON = (queryJSON: string): Clause => {
+  return deserialiseQuery(JSON.parse(queryJSON))
+}
+
+export { FilterClause, OrClause, AndClause, processQuery, deserialiseQueryJSON }
