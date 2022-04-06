@@ -3,6 +3,9 @@ import clone from "./clone"
 class FilterClause {
   prefix: string = "$filter"
   constructor(public filter: boolean) { }
+  toJSON(): object {
+    return { [this.prefix]: this.filter }
+  }
 }
 
 class AndClause {
@@ -15,6 +18,9 @@ class AndClause {
   }
   addChildClause(clause: Clause): void {
     this.childClauses.push(clause)
+  }
+  toJSON(): object {
+    return { [this.prefix]: this.childClauses }
   }
 }
 

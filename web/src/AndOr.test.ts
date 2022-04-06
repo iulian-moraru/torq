@@ -71,64 +71,54 @@ test('complex query returns false', () => {
   const result = processQuery(multiClauseReturnFalse);
   expect(result).toBe(false);
 });
-// const data = [{ a: 1, b: 2 }, { a: 2, b: 3 }, { a: 4, b: 4 }]
 
-// const simpleQuery = {
-//   $filter: false
-// };
+test('simplest query serialises itself', () => {
+  const expected = {
+    "$filter": false
+  }
+  const simplestClauseFalse = new FilterClause(false)
+  const result = JSON.parse(JSON.stringify(simplestClauseFalse))
+  expect(result).toEqual(expected);
+});
 
-// const simpleQuery1 = {
-//   $and: [
-//     { $filter: true },
-//     { $filter: false },
-//   ]
-// };
+test('simple AND query serialises itself', () => {
+  const expected = {
+    $and: [
+      { $filter: false },
+      { $filter: true },
+    ]
+  }
+  const simpleAndClauseReturnFalse = new AndClause()
+  simpleAndClauseReturnFalse.addChildClause(new FilterClause(false))
+  simpleAndClauseReturnFalse.addChildClause(new FilterClause(true))
 
-// const simpleQuery2 = {
-//   $and: [
-//     { $filter: true },
-//     { $filter: true },
-//   ]
-// };
-
-// const queryAnd = {
-//   $and: [
-//     { $filter: false },
-//     {
-//       $and: [
-//         { $filter: false },
-//         { $filter: false },
-//         { $filter: true }]
-//     }
-//   ]
-// };
-
-// const queryOr = {
-//   $and: [
-//     { $filter: false },
-//     {
-//       $or: [
-//         { $filter: false },
-//         { $filter: false },
-//         { $filter: true }]
-//     }
-//   ]
-// };
+  const result = JSON.parse(JSON.stringify(simpleAndClauseReturnFalse))
+  expect(result).toEqual(expected);
+});
 
 
-// (() => {
+test('complex query serialises itself', () => {
+  const expected = {
+    $and: [
+      { $filter: false },
+      {
+        $or: [
+          { $filter: false },
+          { $filter: false },
+          { $filter: true }]
+      }
+    ]
+  }
 
-//   console.log(processQuery(simpleAndClauseReturnFalse))
+  const clauseOrReturnTrue = new OrClause()
+  clauseOrReturnTrue.addChildClause(new FilterClause(false))
+  clauseOrReturnTrue.addChildClause(new FilterClause(false))
+  clauseOrReturnTrue.addChildClause(new FilterClause(true))
 
-//   console.log(processQuery(simpleAndClauseReturnTrue))
+  const complexClause = new AndClause()
+  complexClause.addChildClause(new FilterClause(false))
+  complexClause.addChildClause(clauseOrReturnTrue)
 
-//   console.log(processQuery(clauseOrReturnTrue))
-
-//   console.log(processQuery(clauseOrReturnFalse))
-
-//   console.log(processQuery(multiClauseReturnTrue))
-
-//   console.log(processQuery(multiClauseReturnFalse))
-
-
-// })()
+  const result = JSON.parse(JSON.stringify(complexClause))
+  expect(result).toEqual(expected);
+});
