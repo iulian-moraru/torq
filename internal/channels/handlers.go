@@ -1,115 +1,52 @@
 package channels
 
 import (
-	"encoding/hex"
-	"github.com/lncapital/torq/pkg/lnd_connect"
-	"net/http"
-	"strconv"
-	"strings"
-
-	"github.com/cockroachdb/errors"
 	"github.com/gin-gonic/gin"
 	"github.com/jmoiron/sqlx"
-	"github.com/lightningnetwork/lnd/lnrpc"
-	"github.com/lncapital/torq/internal/settings"
 	"github.com/lncapital/torq/pkg/server_errors"
 	"github.com/rs/zerolog/log"
+	"net/http"
 )
 
-type OpenChanRequestBody struct {
-	LndAddress  string
-	Amount      int64
-	SatPerVbyte *uint64
+type batchOpenChannel struct {
+	NodePubkey         string `json:"nodePubkey"`
+	LocalFundingAmount int64  `json:"localFundingAmount"`
+	PushSat            *int64 `json:"pushSat"`
+	Private            *bool  `json:"private"`
+	MinHtlcMsat        *int64 `json:"minHtlcMsat"`
 }
 
-type closeChanRequestBody struct {
-	ChannelPoint string
-	SatPerVbyte  *uint64
+type BatchOpenRequest struct {
+	Channels    []batchOpenChannel `json:"channels"`
+	TargetConf  *int32             `json:"targetConf"`
+	SatPerVbyte *int64             `json:"satPerVbyte"`
 }
 
-type Response struct {
-	Response string
+type pendingChannel struct {
+	PendingChannelPoint string `json:"pendingChannelPoint"`
 }
 
-func OpenChannelHandler(c *gin.Context, db *sqlx.DB) {
-	connectionDetails, err := settings.GetConnectionDetails(db)
-	conn, err := lnd_connect.Connect(
-		connectionDetails.GRPCAddress,
-		connectionDetails.TLSFileBytes,
-		connectionDetails.MacaroonFileBytes)
-	if err != nil {
-		server_errors.WrapLogAndSendServerError(c, err, "Connecting to LND")
-		return
-	}
+type BatchOpenResponse struct {
+	PendingChannels []pendingChannel `json:"pendingChannels"`
+}
 
-	defer conn.Close()
-
-	client := lnrpc.NewLightningClient(conn)
-	var requestBody OpenChanRequestBody
-
-	if err := c.BindJSON(&requestBody); err != nil {
+func batchOpenHandler(c *gin.Context, db *sqlx.DB) {
+	var batchOpnReq BatchOpenRequest
+	if err := c.BindJSON(&batchOpnReq); err != nil {
+		log.Error().Msgf("JSON binding the request body")
 		server_errors.WrapLogAndSendServerError(c, err, "JSON binding the request body")
 		return
 	}
 
-	pubKeyHex, err := hex.DecodeString(requestBody.LndAddress)
+	response, err := batchOpenChannels(db, batchOpnReq)
 	if err != nil {
-		server_errors.WrapLogAndSendServerError(c, err, "Decoding public key hex")
+		server_errors.WrapLogAndSendServerError(c, err, "Batch open channels")
 		return
 	}
 
-	resp, err := OpenChannel(client, pubKeyHex, requestBody.Amount, requestBody.SatPerVbyte)
-	if err != nil {
-		server_errors.WrapLogAndSendServerError(c, err, "Opening channel")
-		return
-	}
-
-	c.JSON(http.StatusOK, resp)
-
+	c.JSON(http.StatusOK, response)
 }
 
-func CloseChannelHandler(c *gin.Context, db *sqlx.DB) {
-	connectionDetails, err := settings.GetConnectionDetails(db)
-	conn, err := lnd_connect.Connect(
-		connectionDetails.GRPCAddress,
-		connectionDetails.TLSFileBytes,
-		connectionDetails.MacaroonFileBytes)
-	if err != nil {
-		server_errors.WrapLogAndSendServerError(c, err, "Connecting to LND")
-	}
-
-	defer conn.Close()
-
-	client := lnrpc.NewLightningClient(conn)
-	var requestBody closeChanRequestBody
-
-	if err := c.BindJSON(&requestBody); err != nil {
-		server_errors.WrapLogAndSendServerError(c, err, "JSON binding the request body")
-		return
-	}
-
-	splitChanPoint := strings.Split(requestBody.ChannelPoint, ":")
-	if len(splitChanPoint) != 2 {
-		server_errors.LogAndSendServerError(c, errors.New("Channel point missing a colon"))
-		return
-	}
-
-	fundingTxid := &lnrpc.ChannelPoint_FundingTxidStr{FundingTxidStr: splitChanPoint[0]}
-
-	oIndxUint, err := strconv.ParseUint(splitChanPoint[1], 10, 1)
-	if err != nil {
-		server_errors.WrapLogAndSendServerError(c, err, "Parsing channel point output index")
-		return
-	}
-	outputIndex := uint32(oIndxUint)
-
-	log.Debug().Msgf("Funding: %v, index: %v", fundingTxid, outputIndex)
-
-	resp, err := CloseChannel(client, fundingTxid, outputIndex, requestBody.SatPerVbyte)
-	if err != nil {
-		server_errors.WrapLogAndSendServerError(c, err, "Closing channel")
-		return
-	}
-
-	c.JSON(http.StatusOK, resp)
+func RegisterChannelsRoutes(r *gin.RouterGroup, db *sqlx.DB) {
+	r.POST("openbatch", func(c *gin.Context) { batchOpenHandler(c, db) })
 }

@@ -133,7 +133,7 @@ func registerRoutes(r *gin.Engine, db *sqlx.DB, apiPwd string, restartLNDSub fun
 		channelRoutes := api.Group("/channels")
 		{
 			channel_history.RegisterChannelHistoryRoutes(channelRoutes, db)
-			channels.RegisterControlChannelRoutes(channelRoutes, db)
+			channels.RegisterChannelsRoutes(channelRoutes, db)
 		}
 
 		forwardRoutes := api.Group("/forwards")
