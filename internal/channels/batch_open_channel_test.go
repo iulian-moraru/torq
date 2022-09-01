@@ -171,21 +171,3 @@ func Test_processBocResponse(t *testing.T) {
 		}
 	})
 }
-
-func Test_translateChanPoint(t *testing.T) {
-	want := "72c09cee568b5637d1c6730a83fb4576689fd8fec32a8b8a8bab9e25d2267cdc:0"
-	t.Run("Translate channel point", func(t *testing.T) {
-		txid := []byte{
-			220, 124, 38, 210, 37, 158, 171, 139, 138, 139, 42, 195, 254, 216, 159, 104, 118, 69, 251,
-			131, 10, 115, 198, 209, 55, 86, 139, 86, 238, 156, 192, 114,
-		}
-		got, err := translateChanPoint(txid, uint32(0))
-		if err != nil {
-			t.Errorf("translateChanPoint error: %v", err)
-		}
-
-		if got != want {
-			t.Errorf("translateChanPoint()\nGot:\n%v\nWant:\n%v\n", got, want)
-		}
-	})
-}

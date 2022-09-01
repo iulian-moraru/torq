@@ -3,8 +3,6 @@ package channels
 import (
 	"context"
 	"encoding/hex"
-	"fmt"
-	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/cockroachdb/errors"
 	"github.com/jmoiron/sqlx"
 	"github.com/lightningnetwork/lnd/lnrpc"
@@ -126,13 +124,4 @@ func processBocResponse(resp *lnrpc.BatchOpenChannelResponse) (r BatchOpenRespon
 		r.PendingChannels = append(r.PendingChannels, bocPC)
 	}
 	return r, nil
-}
-
-func translateChanPoint(cb []byte, oi uint32) (string, error) {
-	ch, err := chainhash.NewHash(cb)
-	if err != nil {
-		return "", err
-	}
-
-	return fmt.Sprintf("%s:%d", ch.String(), oi), nil
 }
