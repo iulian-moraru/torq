@@ -11,6 +11,9 @@
     &.connected {
       background-color: var(--secondary-2-500);
     }
+    &.disabled {
+      background-color: var(--primary-150) !important;
+    }
   }
   .collapseIcon {
     margin-left: auto;
@@ -56,5 +59,16 @@
   }
   .red {
     color: var(--color-red);
+  }
+}
+:global(.ReactCollapse--collapse) {
+  transition: height 5000ms;
+}
+.nodeMenu {
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  button:not(:last-child) {
+    margin-bottom: 15px;
   }
 }

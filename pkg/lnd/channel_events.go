@@ -10,10 +10,10 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/lightningnetwork/lnd/lnrpc"
 	"github.com/lncapital/torq/internal/channels"
+	// "github.com/rs/zerolog/log"
 	"go.uber.org/ratelimit"
 	"google.golang.org/grpc"
 	"gopkg.in/guregu/null.v4"
-	"io"
 	"log"
 	"time"
 )
@@ -202,16 +202,16 @@ func SubscribeAndStoreChannelEvents(ctx context.Context, client lndClientSubscri
 
 		select {
 		case <-ctx.Done():
-			return ctx.Err()
+			return nil
 		default:
 		}
 
 		chanEvent, err := stream.Recv()
-		if errors.Is(err, io.EOF) {
-			break
-		}
-
 		if err != nil {
+			if errors.As(err, &context.Canceled) {
+				break
+			}
+
 			log.Printf("Subscribe channel events stream receive: %v", err)
 			// rate limited resubscribe
 			log.Println("Attempting reconnect to channel events")

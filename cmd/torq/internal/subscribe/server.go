@@ -2,12 +2,12 @@ package subscribe
 
 import (
 	"context"
-	"fmt"
 	"github.com/cockroachdb/errors"
 	"github.com/jmoiron/sqlx"
 	"github.com/lightningnetwork/lnd/lnrpc"
 	"github.com/lightningnetwork/lnd/lnrpc/routerrpc"
 	"github.com/lncapital/torq/pkg/lnd"
+	// "github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 )
@@ -103,17 +103,16 @@ func Start(ctx context.Context, conn *grpc.ClientConn, db *sqlx.DB, localNodeId 
 		return nil
 	})
 
-	// HTLC events
+	// // HTLC events
 	errs.Go(func() error {
 		err := lnd.SubscribeAndStoreHtlcEvents(ctx, router, db)
 		if err != nil {
-			fmt.Printf("htlc subscribe error: %+v", err)
 			return errors.Wrapf(err, "Start->SubscribeAndStoreHtlcEvents(%v, %v, %v)", ctx, router, db)
 		}
 		return nil
 	})
 
-	// Channel Events
+	// // Channel Events
 	errs.Go(func() error {
 		err := lnd.SubscribeAndStoreChannelEvents(ctx, client, db, pubKeyChan, chanPointChan, localNodeId)
 		if err != nil {
@@ -124,56 +123,45 @@ func Start(ctx context.Context, conn *grpc.ClientConn, db *sqlx.DB, localNodeId 
 
 	// Forwarding history
 	errs.Go(func() error {
-
 		err := lnd.SubscribeForwardingEvents(ctx, client, db, nil)
 		if err != nil {
 			return errors.Wrapf(err, "Start->SubscribeForwardingEvents(%v, %v, %v, %v)", ctx,
 				client, db, nil)
 		}
-
 		return nil
 	})
 
 	// Invoices
 	errs.Go(func() error {
-
 		err := lnd.SubscribeAndStoreInvoices(ctx, client, db)
 		if err != nil {
 			return errors.Wrapf(err, "Start->SubscribeAndStoreInvoices(%v, %v, %v)", ctx,
 				client, db)
 		}
-
 		return nil
 	})
 
 	// Payments
 	errs.Go(func() error {
-
 		err := lnd.SubscribeAndStorePayments(ctx, client, db, nil)
 		if err != nil {
 			return errors.Wrapf(err, "Start->SubscribeAndStorePayments(%v, %v, %v)", ctx,
 				client, db)
 		}
-
 		return nil
 	})
 
 	// Update in flight payments
 	errs.Go(func() error {
-
 		err := lnd.SubscribeAndUpdatePayments(ctx, client, db, nil)
 		if err != nil {
 			return errors.Wrapf(err, "Start->SubscribeAndUpdatePayments(%v, %v, %v)", ctx,
 				client, db)
 		}
-
 		return nil
 	})
 
 	err = errs.Wait()
-	fmt.Println("Subscriptions all ended")
 
 	return err
 }
-
-// Fetch static channel state and store it.

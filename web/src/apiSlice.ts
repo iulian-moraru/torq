@@ -34,7 +34,7 @@ export const torqApi = createApi({
     credentials: "include",
     mode: "cors",
   }),
-  tagTypes: ["settings", "tableView", "localNode"],
+  tagTypes: ["settings", "tableView", "localNodes"],
   endpoints: (builder) => ({
     getFlow: builder.query<any, { from: string; to: string; chanId: string }>({
       query: ({ from, to, chanId }) => `flow?from=${from}&to=${to}&chan_id=${chanId}`,
@@ -140,19 +140,42 @@ export const torqApi = createApi({
     }),
     getLocalNodes: builder.query<localNode[], void>({
       query: () => `settings/local-nodes`,
-      providesTags: ["localNode"],
+      providesTags: ["localNodes"],
     }),
     getLocalNode: builder.query<localNode, number>({
-      query: (nodeId) => `settings/local-node/${nodeId}`,
-      providesTags: ["localNode"],
+      query: (nodeId) => `settings/local-nodes/${nodeId}`,
+      providesTags: ["localNodes"],
     }),
-    updateLocalNode: builder.mutation<any, FormData>({
+    addLocalNode: builder.mutation<any, FormData>({
       query: (localNode) => ({
-        url: "settings/local-node",
+        url: "settings/local-nodes",
+        method: "POST",
+        body: localNode,
+      }),
+      invalidatesTags: ["localNodes"],
+    }),
+    updateLocalNode: builder.mutation<any, { form: FormData; localNodeId: number }>({
+      query: (localNode) => ({
+        url: `settings/local-nodes/${localNode.localNodeId}`,
+        method: "PUT",
+        body: localNode.form,
+      }),
+      invalidatesTags: ["localNodes"],
+    }),
+    updateLocalNodeSetDisabled: builder.mutation<any, { localNodeId: number; disabled: boolean }>({
+      query: (localNode) => ({
+        url: `settings/local-nodes/${localNode.localNodeId}/set-disabled`,
         method: "PUT",
         body: localNode,
       }),
-      invalidatesTags: ["localNode"],
+      invalidatesTags: ["localNodes"],
+    }),
+    updateLocalNodeSetDeleted: builder.mutation<any, { localNodeId: number }>({
+      query: (localNode) => ({
+        url: `settings/local-nodes/${localNode.localNodeId}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["localNodes"],
     }),
   }),
 });
@@ -179,4 +202,7 @@ export const {
   useGetLocalNodeQuery,
   useGetLocalNodesQuery,
   useUpdateLocalNodeMutation,
+  useAddLocalNodeMutation,
+  useUpdateLocalNodeSetDeletedMutation,
+  useUpdateLocalNodeSetDisabledMutation,
 } = torqApi;

@@ -11,7 +11,6 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
-	"io"
 	"testing"
 	"time"
 )
@@ -23,14 +22,14 @@ type stubLNDSubscribeChannelGraphRPC struct {
 
 func (s *stubLNDSubscribeChannelGraphRPC) Recv() (*lnrpc.GraphTopologyUpdate, error) {
 	if len(s.GraphTopologyUpdate) == 0 {
-		return nil, io.EOF
+		return nil, context.Canceled
 	}
 	var gtu interface{}
 	gtu, s.GraphTopologyUpdate = s.GraphTopologyUpdate[0], s.GraphTopologyUpdate[1:]
 	if u, ok := gtu.(*lnrpc.GraphTopologyUpdate); ok {
 		return u, nil
 	}
-	return nil, io.EOF
+	return nil, context.Canceled
 }
 
 func (s *stubLNDSubscribeChannelGraphRPC) SubscribeChannelGraph(ctx context.Context, in *lnrpc.GraphTopologySubscription,

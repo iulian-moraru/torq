@@ -27,7 +27,7 @@ import (
 	"strconv"
 )
 
-func Start(port int, apiPswd string, db *sqlx.DB, restartLNDSub func()) {
+func Start(port int, apiPswd string, db *sqlx.DB, restartLNDSub func() error) {
 	r := gin.Default()
 	registerRoutes(r, db, apiPswd, restartLNDSub)
 
@@ -77,7 +77,7 @@ var wsUpgrade = websocket.Upgrader{
 	},
 }
 
-func registerRoutes(r *gin.Engine, db *sqlx.DB, apiPwd string, restartLNDSub func()) {
+func registerRoutes(r *gin.Engine, db *sqlx.DB, apiPwd string, restartLNDSub func() error) {
 	r.Use(gzip.Gzip(gzip.DefaultCompression))
 	// Websocket
 	ws := r.Group("/ws")

@@ -13,6 +13,7 @@ import { toastCategory } from "../toast/Toasts";
 import ToastContext from "../toast/context";
 import NodeSettings from "./NodeSettings";
 import { localNode } from "apiTypes";
+import Modal from "features/modal/Modal";
 
 function Settings() {
   const { data: settingsData } = useGetSettingsQuery();
@@ -21,6 +22,7 @@ function Settings() {
   const [updateSettings] = useUpdateSettingsMutation();
   const toastRef = React.useContext(ToastContext);
 
+  const [showAddNodeState, setShowAddNodeState] = React.useState(false);
   const [settingsState, setSettingsState] = React.useState({} as settings);
   const [localNodesState, setLocalNodesState] = React.useState([] as localNode[]);
 
@@ -79,9 +81,15 @@ function Settings() {
   };
 
   const addLocalNode = () => {
-    if (!localNodesState.some((item) => item.localNodeId === undefined)) {
-      setLocalNodesState([...localNodesState, {} as localNode]);
-    }
+    setShowAddNodeState(true);
+  };
+
+  const handleNewNodeModalOnClose = () => {
+    setShowAddNodeState(false);
+  };
+
+  const handleOnAddSuccess = () => {
+    setShowAddNodeState(false);
   };
 
   return (
@@ -123,17 +131,16 @@ function Settings() {
               </Box>
             </div>
             <div>
-              <strong>Node</strong>
+              <strong>Nodes</strong>
               {localNodesState &&
                 localNodesState?.map((localNode) => (
-                  <NodeSettings
-                    localNodeId={localNode.localNodeId}
-                    key={localNode.localNodeId ?? 0}
-                    collapsed={false}
-                  />
+                  <NodeSettings localNodeId={localNode.localNodeId} key={localNode.localNodeId ?? 0} collapsed={true} />
                 ))}
             </div>
-            {/* <Button variant={buttonVariants.primary} onClick={addLocalNode} icon={<AddIcon />} text="Add Node" /> */}
+            <Button variant={buttonVariants.primary} onClick={addLocalNode} icon={<AddIcon />} text="Add Node" />
+            <Modal title={"Add Node"} show={showAddNodeState} onClose={handleNewNodeModalOnClose}>
+              <NodeSettings addMode={true} localNodeId={0} collapsed={false} onAddSuccess={handleOnAddSuccess} />
+            </Modal>
           </div>
         </div>
       </React.Fragment>

@@ -10,7 +10,6 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
-	"io"
 	"testing"
 )
 
@@ -21,14 +20,14 @@ type stubLNDSubscribeChannelEventRPC struct {
 
 func (s *stubLNDSubscribeChannelEventRPC) Recv() (*lnrpc.ChannelEventUpdate, error) {
 	if len(s.ChannelEvents) == 0 {
-		return nil, io.EOF
+		return nil, context.Canceled
 	}
 	var channelEvent interface{}
 	channelEvent, s.ChannelEvents = s.ChannelEvents[0], nil
 	if eventUpdate, ok := channelEvent.(*lnrpc.ChannelEventUpdate); ok {
 		return eventUpdate, nil
 	}
-	return nil, io.EOF
+	return nil, context.Canceled
 }
 
 type stubLNDSubscribeChannelEvent struct {

@@ -2,16 +2,17 @@ package lnd
 
 import (
 	"context"
+	"reflect"
+	"testing"
+	"time"
+
 	"github.com/cockroachdb/errors"
 	"github.com/lightningnetwork/lnd/lnrpc"
 	"github.com/lncapital/torq/testutil"
 	"github.com/mixer/clock"
+	// "github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
-	"io"
-	"reflect"
-	"testing"
-	"time"
 )
 
 type mockLightningClient_ListPayments struct {
@@ -38,7 +39,7 @@ func (c *mockLightningClient_ListPayments) ListPayments(ctx context.Context, in 
 		return &r, nil
 	}
 	c.Payments = nil
-	return nil, io.EOF
+	return nil, context.Canceled
 
 }
 
@@ -206,7 +207,7 @@ func TestSubscribePayments(t *testing.T) {
 		c.AddTime(mockTickerInterval)
 	}
 
-	// wait for EOF and go routine to return
+	// wait for context.Canceled and go routine to return
 	errs.Wait()
 
 	t.Run("Last payment index is stored correctly", func(t *testing.T) {
@@ -337,7 +338,7 @@ func TestSubscribePayments(t *testing.T) {
 		c.AddTime(mockTickerInterval)
 	}
 
-	// wait for EOF and go routine to return
+	// wait for context.Canceled and go routine to return
 	errs.Wait()
 	if err != nil {
 		t.Fatal(err)

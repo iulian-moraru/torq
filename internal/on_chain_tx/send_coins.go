@@ -17,10 +17,11 @@ func sendCoins(db *sqlx.DB, req sendCoinsRequest) (r string, err error) {
 		return r, err
 	}
 	connectionDetails, err := settings.GetConnectionDetails(db)
+	// TODO: change to select which local node
 	conn, err := lnd_connect.Connect(
-		connectionDetails.GRPCAddress,
-		connectionDetails.TLSFileBytes,
-		connectionDetails.MacaroonFileBytes)
+		connectionDetails[0].GRPCAddress,
+		connectionDetails[0].TLSFileBytes,
+		connectionDetails[0].MacaroonFileBytes)
 	if err != nil {
 		log.Error().Err(err).Msgf("can't connect to LND: %s", err.Error())
 		return r, errors.Newf("can't connect to LND")

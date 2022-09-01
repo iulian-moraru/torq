@@ -13,7 +13,6 @@ import (
 	"github.com/rs/zerolog/log"
 	"go.uber.org/ratelimit"
 	"google.golang.org/grpc"
-	"io"
 	"time"
 )
 
@@ -214,17 +213,16 @@ func SubscribeAndStoreInvoices(ctx context.Context, client invoicesClient, db *s
 
 		select {
 		case <-ctx.Done():
-			return ctx.Err()
+			return nil
 		default:
 		}
 
 		invoice, err := invoiceStream.Recv()
-		if errors.Is(err, io.EOF) {
-			log.Debug().Msgf("Get invoices - stream ended: EOF")
-			break
-		}
 
 		if err != nil {
+			if errors.As(err, &context.Canceled) {
+				break
+			}
 			log.Error().Msgf("Subscribe and store invoice stream receive: %v\n", err)
 			// rate limited resubscribe
 			log.Debug().Msg("Attempting reconnect to invoice subscription")

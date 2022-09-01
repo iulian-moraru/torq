@@ -10,7 +10,6 @@ import (
 	"github.com/lncapital/torq/internal/channels"
 	"go.uber.org/ratelimit"
 	"google.golang.org/grpc"
-	"io"
 	"log"
 	"time"
 )
@@ -36,16 +35,16 @@ func SubscribeAndStoreChannelGraph(ctx context.Context, client subscribeChannelG
 
 		select {
 		case <-ctx.Done():
-			return ctx.Err()
+			return nil
 		default:
 		}
 
 		gpu, err := stream.Recv()
-		if errors.Is(err, io.EOF) {
-			break
-		}
 
 		if err != nil {
+			if errors.As(err, &context.Canceled) {
+				break
+			}
 			log.Printf("Subscribe channel graph stream receive: %v\n", err)
 			// rate limited resubscribe
 			log.Println("Attempting reconnect to channel graph")

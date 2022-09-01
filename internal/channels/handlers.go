@@ -52,6 +52,9 @@ type updateChanRequestBody struct {
 	MinHtlcMsat   *uint64 `json:"minHtlcMsat"`
 	TimeLockDelta uint32  `json:"timeLockDelta"`
 }
+type pendingChannel struct {
+	PendingChannelPoint string `json:"pendingChannelPoint"`
+}
 
 func batchOpenHandler(c *gin.Context, db *sqlx.DB) {
 	var batchOpnReq BatchOpenRequest
@@ -83,6 +86,41 @@ func updateChannelsHandler(c *gin.Context, db *sqlx.DB) {
 	response, err := updateChannels(db, requestBody)
 	if err != nil {
 		server_errors.WrapLogAndSendServerError(c, err, "Update channel/s policy")
+		return
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+
+type batchOpenChannel struct {
+	NodePubkey         string `json:"nodePubkey"`
+	LocalFundingAmount int64  `json:"localFundingAmount"`
+	PushSat            *int64 `json:"pushSat"`
+	Private            *bool  `json:"private"`
+	MinHtlcMsat        *int64 `json:"minHtlcMsat"`
+}
+
+type BatchOpenRequest struct {
+	Channels    []batchOpenChannel `json:"channels"`
+	TargetConf  *int32             `json:"targetConf"`
+	SatPerVbyte *int64             `json:"satPerVbyte"`
+}
+
+type BatchOpenResponse struct {
+	PendingChannels []pendingChannel `json:"pendingChannels"`
+}
+
+func batchOpenHandler(c *gin.Context, db *sqlx.DB) {
+	var batchOpnReq BatchOpenRequest
+	if err := c.BindJSON(&batchOpnReq); err != nil {
+		log.Error().Msgf("JSON binding the request body")
+		server_errors.WrapLogAndSendServerError(c, err, "JSON binding the request body")
+		return
+	}
+
+	response, err := batchOpenChannels(db, batchOpnReq)
+	if err != nil {
+		server_errors.WrapLogAndSendServerError(c, err, "Batch open channels")
 		return
 	}
 

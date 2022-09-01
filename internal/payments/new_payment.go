@@ -13,7 +13,6 @@ import (
 	"github.com/lncapital/torq/pkg/lnd_connect"
 	"github.com/lncapital/torq/pkg/server_errors"
 	"google.golang.org/grpc"
-	"io"
 	"time"
 )
 
@@ -75,7 +74,7 @@ type NewPaymentResponse struct {
 	Preimage       string    `json:"preimage"`
 	PaymentRequest string    `json:"paymentRequest"`
 	AmountMsat     int64     `json:"amountMsat"`
-	FeeLimitMsat   int64     `json:"amountMsat"`
+	FeeLimitMsat   int64     `json:"feeLimitMsat"`
 	CreationDate   time.Time `json:"creationDate"`
 	Attempt        attempt   `json:"path"`
 }
@@ -99,10 +98,11 @@ func SendNewPayment(
 	if err != nil {
 		return errors.New("Error getting node connection details from the db")
 	}
+	// TODO: which node are you trying to send the payment from?
 	conn, err := lnd_connect.Connect(
-		connectionDetails.GRPCAddress,
-		connectionDetails.TLSFileBytes,
-		connectionDetails.MacaroonFileBytes)
+		connectionDetails[0].GRPCAddress,
+		connectionDetails[0].TLSFileBytes,
+		connectionDetails[0].MacaroonFileBytes)
 	if err != nil {
 		server_errors.WrapLogAndSendServerError(c, err, "Failed connecting to LND")
 	}
@@ -154,9 +154,6 @@ func sendPayment(client rrpcClientSendPayment, npReq NewPaymentRequest, wChan ch
 		}
 
 		resp, err := req.Recv()
-		if err == io.EOF {
-			return nil
-		}
 		if err != nil {
 			return errors.Newf("Err sending payment: %v", err)
 		}

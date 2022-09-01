@@ -51,9 +51,9 @@ func CloseChannel(wChan chan interface{}, db *sqlx.DB, c *gin.Context, ccReq Clo
 		return errors.New("Error getting node connection details from the db")
 	}
 	conn, err := lnd_connect.Connect(
-		connectionDetails.GRPCAddress,
-		connectionDetails.TLSFileBytes,
-		connectionDetails.MacaroonFileBytes)
+		connectionDetails[0].GRPCAddress,
+		connectionDetails[0].TLSFileBytes,
+		connectionDetails[0].MacaroonFileBytes)
 	if err != nil {
 		//return errors.New("Failed connecting to LND")
 		server_errors.WrapLogAndSendServerError(c, err, "Failed connecting to LND")

@@ -11,7 +11,6 @@ import (
 	"github.com/lncapital/torq/internal/settings"
 	"github.com/lncapital/torq/pkg/lnd_connect"
 	"github.com/rs/zerolog/log"
-	"io"
 )
 
 type OpenChannelRequest struct {
@@ -29,7 +28,7 @@ type OpenChannelRequest struct {
 }
 
 type OpenChannelResponse struct {
-	reqId               string `json:"reqId"`
+	ReqId               string `json:"reqId"`
 	Status              string `json:"status"`
 	ChannelPoint        string `json:"channelPoint,omitempty"`
 	PendingChannelPoint string `json:"pendingChannelPoint,omitempty"`
@@ -50,10 +49,11 @@ func OpenChannel(db *sqlx.DB, wChan chan interface{}, req OpenChannelRequest, re
 		return errors.New("Error getting node connection details from the db")
 	}
 
+	// TODO: Need to know for which node we are trying to open the channel
 	conn, err := lnd_connect.Connect(
-		connectionDetails.GRPCAddress,
-		connectionDetails.TLSFileBytes,
-		connectionDetails.MacaroonFileBytes)
+		connectionDetails[0].GRPCAddress,
+		connectionDetails[0].TLSFileBytes,
+		connectionDetails[0].MacaroonFileBytes)
 	if err != nil {
 		log.Error().Err(err).Msgf("can't connect to LND: %s", err.Error())
 		return errors.Newf("can't connect to LND")
@@ -88,9 +88,6 @@ func OpenChannel(db *sqlx.DB, wChan chan interface{}, req OpenChannelRequest, re
 		}
 
 		resp, err := openChanRes.Recv()
-		if err == io.EOF {
-			return nil
-		}
 
 		if err != nil {
 			log.Error().Msgf("could not open channel: %v", err)
@@ -105,7 +102,6 @@ func OpenChannel(db *sqlx.DB, wChan chan interface{}, req OpenChannelRequest, re
 		wChan <- r
 
 	}
-	return nil
 }
 
 func prepareOpenRequest(ocReq OpenChannelRequest) (r lnrpc.OpenChannelRequest, err error) {

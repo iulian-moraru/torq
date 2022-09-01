@@ -9,12 +9,20 @@ import {
   ChevronDown20Regular as ChevronIcon,
   MoreCircle20Regular as MoreIcon,
   Delete20Regular as DeleteIcon,
+  Pause20Regular as PauseIcon,
+  Play20Regular as PlayIcon,
 } from "@fluentui/react-icons";
 import { toastCategory } from "../toast/Toasts";
 import ToastContext from "../toast/context";
 import File from "../forms/File";
 import TextInput from "features/forms/TextInput";
-import { useGetLocalNodeQuery, useUpdateLocalNodeMutation } from "apiSlice";
+import {
+  useGetLocalNodeQuery,
+  useUpdateLocalNodeMutation,
+  useAddLocalNodeMutation,
+  useUpdateLocalNodeSetDisabledMutation,
+  useUpdateLocalNodeSetDeletedMutation,
+} from "apiSlice";
 import { localNode } from "apiTypes";
 import classNames from "classnames";
 import Collapse from "features/collapse/Collapse";
@@ -26,8 +34,11 @@ import Modal from "features/modal/Modal";
 interface nodeProps {
   localNodeId: number;
   collapsed?: boolean;
+  addMode?: boolean;
+  onAddSuccess?: Function;
+  onAddFailure?: Function;
 }
-function NodeSettings({ localNodeId, collapsed }: nodeProps) {
+function NodeSettings({ localNodeId, collapsed, addMode, onAddSuccess }: nodeProps) {
   const toastRef = React.useContext(ToastContext);
   const popoverRef = React.useRef();
 
@@ -35,9 +46,12 @@ function NodeSettings({ localNodeId, collapsed }: nodeProps) {
     skip: !localNodeId,
   });
   const [updateLocalNode] = useUpdateLocalNodeMutation();
+  const [addLocalNode] = useAddLocalNodeMutation();
+  const [setDisableLocalNode] = useUpdateLocalNodeSetDisabledMutation();
+  const [deleteLocalNode] = useUpdateLocalNodeSetDeletedMutation();
 
   const [localState, setLocalState] = useState({} as localNode);
-  const [collapsedState, setCollapsedState] = useState(true);
+  const [collapsedState, setCollapsedState] = useState(collapsed ?? false);
   const [showModalState, setShowModalState] = useState(false);
   const [deleteConfirmationTextInputState, setDeleteConfirmationTextInputState] = useState("");
   const [deleteEnabled, setDeleteEnabled] = useState(false);
@@ -61,8 +75,12 @@ function NodeSettings({ localNodeId, collapsed }: nodeProps) {
     setShowModalState(true);
   };
 
-  const submitNodeSettings = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    submitNodeSettings();
+  };
+
+  const submitNodeSettings = () => {
     const form = new FormData();
     form.append("implementation", "LND");
     form.append("grpcAddress", localState.grpcAddress ?? "");
@@ -72,7 +90,17 @@ function NodeSettings({ localNodeId, collapsed }: nodeProps) {
     if (localState.macaroonFile) {
       form.append("macaroonFile", localState.macaroonFile, localState.macaroonFileName);
     }
-    updateLocalNode(form);
+    // we are adding new node
+    if (!localState.localNodeId) {
+      addLocalNode(form);
+      toastRef?.current?.addToast("Local node added", toastCategory.success);
+      setLocalState({} as localNode);
+      if (onAddSuccess) {
+        onAddSuccess();
+      }
+      return;
+    }
+    updateLocalNode({ form, localNodeId: localState.localNodeId });
     toastRef?.current?.addToast("Local node info saved", toastCategory.success);
   };
 
@@ -102,12 +130,19 @@ function NodeSettings({ localNodeId, collapsed }: nodeProps) {
     setShowModalState(false);
     setDeleteConfirmationTextInputState("");
     setDeleteEnabled(false);
-    // delete node!!!
+    deleteLocalNode({ localNodeId: localState.localNodeId });
   };
 
   const handleDeleteConfirmationTextInputChange = (value: string) => {
     setDeleteConfirmationTextInputState(value);
     setDeleteEnabled(value.toLowerCase() === "delete");
+  };
+
+  const handleDisableClick = () => {
+    setDisableLocalNode({ localNodeId: localState.localNodeId, disabled: !localState.disabled });
+    if (popoverRef.current) {
+      (popoverRef.current as { close: Function }).close();
+    }
   };
 
   const implementationOptions = [{ value: "LND", label: "LND" } as SelectOption];
@@ -116,38 +151,52 @@ function NodeSettings({ localNodeId, collapsed }: nodeProps) {
   return (
     <Box>
       <>
-        {/* <div className={styles.header}>
-          <div className={classNames(styles.connectionIcon, { [styles.connected]: !!localNodeData })}>
-            {localNodeData && <ConnectedIcon />}
-            {!localNodeData && <DisconnectedIcon />}
-          </div>
-          <div className={styles.title}>Node Details</div>
-          <div className={classNames(styles.collapseIcon, { [styles.collapsed]: collapsedState })}>
-            <ChevronIcon onClick={handleCollapseClick} />
-          </div>
-        </div> */}
-        <Collapse collapsed={collapsedState}>
-          <>
-            {/* <div className={styles.borderSection}>
-              <Switch checked={!localNodeData?.disabled} label={"Enable Node"} labelPosition={"left"} />
+        {!addMode && (
+          <div className={styles.header}>
+            <div
+              className={classNames(styles.connectionIcon, {
+                [styles.connected]: true,
+                [styles.disabled]: localState.disabled,
+              })}
+            >
+              {!localState.disabled && <ConnectedIcon />}
+              {localState.disabled && <DisconnectedIcon />}
             </div>
-            <div className={styles.borderSection}>
-              <div className={styles.detailHeader}>
-                <strong>Node Details</strong>
-                <Popover button={menuButton} className={"right"} ref={popoverRef}>
-                  <div style={{ padding: "10px" }}>
-                    <Button
-                      variant={buttonVariants.warning}
-                      text={"Delete node"}
-                      icon={<DeleteIcon />}
-                      onClick={handleDeleteClick}
-                    />
+            <div className={styles.title}>{localNodeData?.grpcAddress}</div>
+            <div className={classNames(styles.collapseIcon, { [styles.collapsed]: collapsedState })}>
+              <ChevronIcon onClick={handleCollapseClick} />
+            </div>
+          </div>
+        )}
+        <Collapse collapsed={collapsedState} animate={!addMode}>
+          <>
+            {!addMode && (
+              <>
+                <div className={styles.borderSection}>
+                  <div className={styles.detailHeader}>
+                    <strong>Node Details</strong>
+                    <Popover button={menuButton} className={"right"} ref={popoverRef}>
+                      <div className={styles.nodeMenu}>
+                        <Button
+                          variant={buttonVariants.secondary}
+                          text={localState.disabled ? "Enable node" : "Disable node"}
+                          icon={localState.disabled ? <PlayIcon /> : <PauseIcon />}
+                          onClick={handleDisableClick}
+                        />
+                        <Button
+                          variant={buttonVariants.warning}
+                          text={"Delete node"}
+                          icon={<DeleteIcon />}
+                          onClick={handleDeleteClick}
+                        />
+                      </div>
+                    </Popover>
                   </div>
-                </Popover>
-              </div>
-            </div> */}
+                </div>
+              </>
+            )}
             <div className={""}>
-              <form onSubmit={submitNodeSettings}>
+              <form onSubmit={handleSubmit}>
                 <Select
                   label="Implementation"
                   onChange={() => {}}
@@ -174,9 +223,9 @@ function NodeSettings({ localNodeId, collapsed }: nodeProps) {
                 </span>
                 <Button
                   variant={buttonVariants.secondary}
-                  text={"Save node details"}
+                  text={addMode ? "Add Node" : "Save node details"}
                   icon={<SaveIcon />}
-                  submit={true}
+                  onClick={submitNodeSettings}
                   fullWidth={true}
                 />
               </form>

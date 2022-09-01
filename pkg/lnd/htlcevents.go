@@ -5,14 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
-	"log"
-	"time"
-
 	"github.com/jmoiron/sqlx"
 	"github.com/lightningnetwork/lnd/lnrpc/routerrpc"
 	"github.com/lncapital/torq/internal/channels"
 	"go.uber.org/ratelimit"
+	"log"
+	"time"
 )
 
 func storeLinkFailEvent(db *sqlx.DB, h *routerrpc.HtlcEvent, fwe *routerrpc.LinkFailEvent) error {
@@ -263,12 +261,11 @@ func SubscribeAndStoreHtlcEvents(ctx context.Context, router routerrpc.RouterCli
 		}
 
 		htlcEvent, err := htlcStream.Recv()
-		if errors.Is(err, io.EOF) {
-			log.Println("EOF when processing htlc streams")
-			break
-		}
 
 		if err != nil {
+			if errors.As(err, &context.Canceled) {
+				break
+			}
 			log.Printf("Subscribe htlc events stream receive: %v\n", err)
 			// rate limited resubscribe
 			log.Println("Attempting reconnect to HTLC events")
