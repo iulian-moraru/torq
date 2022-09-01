@@ -37,7 +37,7 @@ function Navigation() {
         {/*  <EventsIcon />*/}
         {/*</div>*/}
 
-        <div className={styles.collapseButton} onClick={() => dispatch(toggleNav())}>
+        <div className={styles.collapseButton} id={"collapse-navigation"} onClick={() => dispatch(toggleNav())}>
           <CollapseIcon />
         </div>
       </div>

@@ -57,3 +57,20 @@ test-e2e:
 .PHONY: test-e2e-debug
 test-e2e-debug:
 	E2E=true DEBUG=true go test -timeout 20m -v -count=1 ./test/e2e/lnd
+
+.PHONY: create-dev-env
+create-dev-env:
+	go build ./virtual_network/torq_vn && go run ./virtual_network/torq_vn create --db true
+
+.PHONY: start-dev-env
+start-dev-env:
+	go build ./virtual_network/torq_vn &&  go run ./virtual_network/torq_vn start --db true
+
+.PHONY: stop-dev-env
+stop-dev-env:
+	go build ./virtual_network/torq_vn &&  go run ./virtual_network/torq_vn stop --db true
+
+.PHONY: purge-dev-env
+purge-dev-env:
+	go build ./virtual_network/torq_vn &&  go run ./virtual_network/torq_vn purge --db true
+

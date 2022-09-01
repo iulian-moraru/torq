@@ -19,11 +19,16 @@ cover.html
 ## Ignore builds
 ./torq
 torq
+torq_vn
 !/cmd/torq
 
 ## Ignore config file
 torq.conf
 torq-d*.conf
+
+# Ignore virtual network generated files
+virtual_network/generated_files/*.macaroon
+virtual_network/generated_files/tls.cert
 
 # Ignore all editor configs
 .vscode

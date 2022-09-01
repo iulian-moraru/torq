@@ -7,9 +7,26 @@ import (
 	qp "github.com/lncapital/torq/internal/query_parser"
 	ah "github.com/lncapital/torq/pkg/api_helpers"
 	"github.com/lncapital/torq/pkg/server_errors"
+	"github.com/rs/zerolog/log"
 	"net/http"
 	"strconv"
 )
+
+type newInvoiceRequest struct {
+	Memo            *string `json:"memo"`
+	RPreImage       *string `json:"rPreImage"`
+	ValueMsat       *int64  `json:"valueMsat"`
+	Expiry          *int64  `json:"expiry"`
+	FallBackAddress *string `json:"fallBackAddress"`
+	Private         *bool   `json:"private"`
+	IsAmp           *bool   `json:"isAmp"`
+}
+
+type newInvoiceResponse struct {
+	PaymentRequest string `json:"paymentRequest"`
+	AddIndex       uint64 `json:"addIndex"`
+	PaymentAddress string `json:"paymentAddress"`
+}
 
 func getInvoicesHandler(c *gin.Context, db *sqlx.DB) {
 
@@ -139,7 +156,27 @@ func getInvoiceHandler(c *gin.Context, db *sqlx.DB) {
 	c.JSON(http.StatusOK, r)
 }
 
+func newInvoiceHandler(c *gin.Context, db *sqlx.DB) {
+
+	var requestBody newInvoiceRequest
+
+	if err := c.BindJSON(&requestBody); err != nil {
+		log.Error().Msgf("JSON binding the request body")
+		server_errors.WrapLogAndSendServerError(c, err, "JSON binding the request body")
+		return
+	}
+
+	resp, err := newInvoice(db, requestBody)
+	if err != nil {
+		server_errors.WrapLogAndSendServerError(c, err, "Creating new invoice")
+		return
+	}
+
+	c.JSON(http.StatusOK, resp)
+}
+
 func RegisterInvoicesRoutes(r *gin.RouterGroup, db *sqlx.DB) {
 	r.GET("", func(c *gin.Context) { getInvoicesHandler(c, db) })
 	r.GET(":identifier", func(c *gin.Context) { getInvoiceHandler(c, db) })
+	r.POST("newinvoice", func(c *gin.Context) { newInvoiceHandler(c, db) })
 }

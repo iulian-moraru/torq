@@ -14,6 +14,7 @@ import (
 	"github.com/lncapital/torq/internal/flow"
 	"github.com/lncapital/torq/internal/forwards"
 	"github.com/lncapital/torq/internal/invoices"
+	"github.com/lncapital/torq/internal/messages"
 	"github.com/lncapital/torq/internal/on_chain_tx"
 	"github.com/lncapital/torq/internal/payments"
 	"github.com/lncapital/torq/internal/settings"
@@ -133,7 +134,7 @@ func registerRoutes(r *gin.Engine, db *sqlx.DB, apiPwd string, restartLNDSub fun
 		channelRoutes := api.Group("/channels")
 		{
 			channel_history.RegisterChannelHistoryRoutes(channelRoutes, db)
-			channels.RegisterChannelsRoutes(channelRoutes, db)
+			channels.RegisterChannelRoutes(channelRoutes, db)
 		}
 
 		forwardRoutes := api.Group("/forwards")
@@ -144,6 +145,11 @@ func registerRoutes(r *gin.Engine, db *sqlx.DB, apiPwd string, restartLNDSub fun
 		flowRoutes := api.Group("/flow")
 		{
 			flow.RegisterFlowRoutes(flowRoutes, db)
+		}
+
+		messageRoutes := api.Group("messages")
+		{
+			messages.RegisterMessagesRoutes(messageRoutes, db)
 		}
 
 		settingRoutes := api.Group("settings")
