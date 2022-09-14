@@ -11,13 +11,21 @@ import (
 )
 
 func verifyMessage(db *sqlx.DB, req VerifyMessageRequest) (r VerifyMessageResponse, err error) {
-	connectionDetails, err := settings.GetConnectionDetails(db)
+	if req.NodeId == 0 {
+		return r, errors.Newf("Node Id missing")
+	}
+
+	connectionDetails, err := settings.GetConnectionDetails(db, false, req.NodeId)
 	if err != nil {
 		log.Error().Err(err).Msgf("Error getting node connection details from the db: %s", err.Error())
 		return r, errors.New("Error getting node connection details from the db")
 	}
 
-	// TODO: change to select which local node
+	if len(connectionDetails) == 0 {
+		//log.Debug().Msgf("Node is deleted or disabled")
+		return r, errors.Newf("Local node disabled or deleted")
+	}
+
 	conn, err := lnd_connect.Connect(
 		connectionDetails[0].GRPCAddress,
 		connectionDetails[0].TLSFileBytes,

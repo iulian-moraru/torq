@@ -18,13 +18,17 @@ func batchOpenChannels(db *sqlx.DB, req BatchOpenRequest) (r BatchOpenResponse, 
 		return r, err
 	}
 
-	connectionDetails, err := settings.GetConnectionDetails(db)
+	connectionDetails, err := settings.GetConnectionDetails(db, false, req.NodeId)
 	if err != nil {
 		log.Error().Err(err).Msgf("Error getting node connection details from the db: %s", err.Error())
 		return r, errors.New("Error getting node connection details from the db")
 	}
 
-	// TODO: change to select which local node
+	if len(connectionDetails) == 0 {
+		//log.Debug().Msgf("Node is deleted or disabled")
+		return r, errors.Newf("Local node disabled or deleted")
+	}
+
 	conn, err := lnd_connect.Connect(
 		connectionDetails[0].GRPCAddress,
 		connectionDetails[0].TLSFileBytes,
@@ -55,6 +59,11 @@ func batchOpenChannels(db *sqlx.DB, req BatchOpenRequest) (r BatchOpenResponse, 
 }
 
 func checkPrepareReq(bocReq BatchOpenRequest) (req lnrpc.BatchOpenChannelRequest, err error) {
+
+	if bocReq.NodeId == 0 {
+		return req, errors.New("Node id is missing")
+	}
+
 	if len(bocReq.Channels) == 0 {
 		log.Debug().Msgf("channel array empty")
 		return req, errors.New("Channels array is empty")

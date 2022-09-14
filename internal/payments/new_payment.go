@@ -13,6 +13,7 @@ import (
 	"github.com/lncapital/torq/pkg/lnd_connect"
 	"github.com/lncapital/torq/pkg/server_errors"
 	"google.golang.org/grpc"
+	"io"
 	"time"
 )
 
@@ -23,6 +24,7 @@ type rrpcClientSendPayment interface {
 }
 
 type NewPaymentRequest struct {
+	NodeId           int     `json:"nodeId"`
 	Invoice          string  `json:"invoice"`
 	TimeOutSecs      int32   `json:"timeoutSecs"`
 	Dest             *[]byte `json:"dest"`
@@ -94,11 +96,19 @@ func SendNewPayment(
 	reqId string,
 ) (err error) {
 
-	connectionDetails, err := settings.GetConnectionDetails(db)
+	if npReq.NodeId == 0 {
+		return errors.New("Node id is missing")
+	}
+
+	connectionDetails, err := settings.GetConnectionDetails(db, false, npReq.NodeId)
 	if err != nil {
 		return errors.New("Error getting node connection details from the db")
 	}
-	// TODO: which node are you trying to send the payment from?
+
+	if len(connectionDetails) == 0 {
+		//log.Debug().Msgf("Node is deleted or disabled")
+		return errors.Newf("Local node disabled or deleted")
+	}
 	conn, err := lnd_connect.Connect(
 		connectionDetails[0].GRPCAddress,
 		connectionDetails[0].TLSFileBytes,
@@ -154,6 +164,12 @@ func sendPayment(client rrpcClientSendPayment, npReq NewPaymentRequest, wChan ch
 		}
 
 		resp, err := req.Recv()
+
+		if err == io.EOF {
+			//log.Debug().Msgf("New payment EOF")
+			return nil
+		}
+
 		if err != nil {
 			return errors.Newf("Err sending payment: %v", err)
 		}

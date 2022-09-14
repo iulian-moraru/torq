@@ -24,8 +24,19 @@ func Test_processInvoiceReq(t *testing.T) {
 		wantErr bool
 	}{
 		{
+			"Node ID missing",
+			newInvoiceRequest{
+				ValueMsat: &valueMsat,
+			},
+			lnrpc.Invoice{
+				ValueMsat: 11,
+			},
+			true,
+		},
+		{
 			"Only ValueMSat provided",
 			newInvoiceRequest{
+				NodeId:    1,
 				ValueMsat: &valueMsat,
 			},
 			lnrpc.Invoice{
@@ -36,6 +47,7 @@ func Test_processInvoiceReq(t *testing.T) {
 		{
 			"All params provided",
 			newInvoiceRequest{
+				NodeId:          1,
 				Memo:            &memo,
 				RPreImage:       &rPreImage,
 				ValueMsat:       &valueMsat,

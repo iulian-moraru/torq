@@ -103,8 +103,19 @@ func Test_prepareCloseRequest(t *testing.T) {
 		wantErr bool
 	}{
 		{
+			"Node ID not provided",
+			CloseChannelRequest{
+				ChannelPoint: "c946aad8ea807099f2f4eaf2f92821024c9d8a79afd465573e924dacddfa490c:1",
+			},
+			lnrpc.CloseChannelRequest{
+				ChannelPoint: channelPoint,
+			},
+			true,
+		},
+		{
 			"Both targetConf & satPerVbyte provided",
 			CloseChannelRequest{
+				NodeId:          1,
 				ChannelPoint:    "test",
 				Force:           nil,
 				TargetConf:      &targetConf,
@@ -123,6 +134,7 @@ func Test_prepareCloseRequest(t *testing.T) {
 		{
 			"Just mandatory params",
 			CloseChannelRequest{
+				NodeId:       1,
 				ChannelPoint: "c946aad8ea807099f2f4eaf2f92821024c9d8a79afd465573e924dacddfa490c:1",
 			},
 			lnrpc.CloseChannelRequest{
@@ -133,6 +145,7 @@ func Test_prepareCloseRequest(t *testing.T) {
 		{
 			"All params provide",
 			CloseChannelRequest{
+				NodeId:          1,
 				ChannelPoint:    "c946aad8ea807099f2f4eaf2f92821024c9d8a79afd465573e924dacddfa490c:1",
 				Force:           &force,
 				TargetConf:      &targetConf,

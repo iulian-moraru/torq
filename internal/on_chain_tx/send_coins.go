@@ -16,8 +16,17 @@ func sendCoins(db *sqlx.DB, req sendCoinsRequest) (r string, err error) {
 	if err != nil {
 		return r, err
 	}
-	connectionDetails, err := settings.GetConnectionDetails(db)
-	// TODO: change to select which local node
+
+	connectionDetails, err := settings.GetConnectionDetails(db, false, req.NodeId)
+	if err != nil {
+		log.Error().Err(err).Msgf("Error getting node connection details from the db: %s", err.Error())
+		return r, errors.New("Error getting node connection details from the db")
+	}
+
+	if len(connectionDetails) == 0 {
+		//log.Debug().Msgf("Node is deleted or disabled")
+		return r, errors.Newf("Local node disabled or deleted")
+	}
 	conn, err := lnd_connect.Connect(
 		connectionDetails[0].GRPCAddress,
 		connectionDetails[0].TLSFileBytes,
@@ -43,6 +52,10 @@ func sendCoins(db *sqlx.DB, req sendCoinsRequest) (r string, err error) {
 }
 
 func processSendRequest(req sendCoinsRequest) (r lnrpc.SendCoinsRequest, err error) {
+	if req.NodeId == 0 {
+		return r, errors.New("Node id is missing")
+	}
+
 	if req.Addr == "" {
 		log.Error().Msgf("Address must be provided")
 		return r, errors.New("Address must be provided")

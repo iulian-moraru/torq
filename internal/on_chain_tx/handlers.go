@@ -24,12 +24,14 @@ import (
 //TAPROOT_PUBKEY = 4;
 //UNUSED_TAPROOT_PUBKEY = 5;
 type newAddressRequest struct {
-	Type int32 `json:"type"`
+	NodeId int   `json:"nodeId"`
+	Type   int32 `json:"type"`
 	//The name of the account to generate a new address for. If empty, the default wallet account is used.
 	Account string `json:"account"`
 }
 
 type sendCoinsRequest struct {
+	NodeId           int     `json:"nodeId"`
 	Addr             string  `json:"addr"`
 	AmountSat        int64   `json:"amountSat"`
 	TargetConf       *int32  `json:"targetConf"`

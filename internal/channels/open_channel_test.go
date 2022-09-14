@@ -26,6 +26,27 @@ func Test_prepareOpenRequest(t *testing.T) {
 		want    lnrpc.OpenChannelRequest
 		wantErr bool
 	}{
+		{"Node id not provided",
+			OpenChannelRequest{
+				NodePubKey:         pubKeyStr,
+				LocalFundingAmount: 12,
+				PushSat:            nil,
+				SatPerVbyte:        &satpvb,
+				TargetConf:         &tgConf,
+			},
+			lnrpc.OpenChannelRequest{},
+			true},
+		{"Just mandatory params",
+			OpenChannelRequest{
+				NodeId:             1,
+				NodePubKey:         pubKeyStr,
+				LocalFundingAmount: 12,
+			},
+			lnrpc.OpenChannelRequest{
+				NodePubkey:         pubKeyByte,
+				LocalFundingAmount: 12,
+			},
+			false},
 		{"Both targetConf & satPerVbyte provided",
 			OpenChannelRequest{
 				NodePubKey:         pubKeyStr,
@@ -38,6 +59,7 @@ func Test_prepareOpenRequest(t *testing.T) {
 			true},
 		{"Just mandatory params",
 			OpenChannelRequest{
+				NodeId:             1,
 				NodePubKey:         pubKeyStr,
 				LocalFundingAmount: 12,
 			},
@@ -48,6 +70,7 @@ func Test_prepareOpenRequest(t *testing.T) {
 			false},
 		{"All params provided",
 			OpenChannelRequest{
+				NodeId:             1,
 				NodePubKey:         pubKeyStr,
 				LocalFundingAmount: 12,
 				PushSat:            &pushSat,

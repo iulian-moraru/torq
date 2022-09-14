@@ -23,6 +23,7 @@ type updateResponse struct {
 }
 
 type updateChanRequestBody struct {
+	NodeId        int     `json:"nodeId"`
 	ChannelPoint  *string `json:"channelPoint"`
 	FeeRatePpm    *uint32 `json:"feeRatePpm"`
 	BaseFeeMsat   *int64  `json:"baseFeeMsat"`
@@ -62,6 +63,7 @@ type batchOpenChannel struct {
 }
 
 type BatchOpenRequest struct {
+	NodeId      int                `json:"nodeId"`
 	Channels    []batchOpenChannel `json:"channels"`
 	TargetConf  *int32             `json:"targetConf"`
 	SatPerVbyte *int64             `json:"satPerVbyte"`

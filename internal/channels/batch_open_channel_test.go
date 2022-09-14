@@ -24,8 +24,23 @@ func Test_checkPrepareReq(t *testing.T) {
 		wantErr bool
 	}{
 		{
+			"Node ID is missing",
+			BatchOpenRequest{
+				Channels: []batchOpenChannel{
+					{NodePubkey: "02bea9fae5a4fc685acd5f59047169094774d51fad0d2f3b46c1bee1dc23a6ce2d", LocalFundingAmount: 250000},
+					{NodePubkey: "03003a3c4df03c5a980589626a69c955126c828d51a58f700ef1c64e03bf3030b0", LocalFundingAmount: 250000},
+				},
+			},
+			lnrpc.BatchOpenChannelRequest{Channels: []*lnrpc.BatchOpenChannel{
+				{NodePubkey: bobPKbyte, LocalFundingAmount: 250000},
+				{NodePubkey: davePKbyte, LocalFundingAmount: 250000},
+			}},
+			true,
+		},
+		{
 			"Channels array empty",
 			BatchOpenRequest{
+				NodeId:      1,
 				Channels:    []batchOpenChannel{},
 				TargetConf:  nil,
 				SatPerVbyte: nil,
@@ -36,6 +51,7 @@ func Test_checkPrepareReq(t *testing.T) {
 		{
 			"Both satpervbyte and targetconf set",
 			BatchOpenRequest{
+				NodeId: 1,
 				Channels: []batchOpenChannel{
 					{NodePubkey: "03003a3c4df03c5a980589626a69c955126c828d51a58f700ef1c64e03bf3030b0"},
 				},
@@ -48,6 +64,7 @@ func Test_checkPrepareReq(t *testing.T) {
 		{
 			"LocalFundingAmount 0",
 			BatchOpenRequest{
+				NodeId: 1,
 				Channels: []batchOpenChannel{
 					{NodePubkey: "03003a3c4df03c5a980589626a69c955126c828d51a58f700ef1c64e03bf3030b0", LocalFundingAmount: 0},
 				},
@@ -59,6 +76,7 @@ func Test_checkPrepareReq(t *testing.T) {
 		{
 			"Only mandatory params",
 			BatchOpenRequest{
+				NodeId: 1,
 				Channels: []batchOpenChannel{
 					{NodePubkey: "02bea9fae5a4fc685acd5f59047169094774d51fad0d2f3b46c1bee1dc23a6ce2d", LocalFundingAmount: 250000},
 					{NodePubkey: "03003a3c4df03c5a980589626a69c955126c828d51a58f700ef1c64e03bf3030b0", LocalFundingAmount: 250000},
@@ -73,6 +91,7 @@ func Test_checkPrepareReq(t *testing.T) {
 		{
 			"All optional params",
 			BatchOpenRequest{
+				NodeId: 1,
 				Channels: []batchOpenChannel{
 					{
 						NodePubkey:         "02bea9fae5a4fc685acd5f59047169094774d51fad0d2f3b46c1bee1dc23a6ce2d",

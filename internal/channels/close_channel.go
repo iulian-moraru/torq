@@ -21,6 +21,7 @@ type lndClientCloseChannel interface {
 }
 
 type CloseChannelRequest struct {
+	NodeId          int     `json:"nodeId"`
 	ChannelPoint    string  `json:"channelPoint"`
 	Force           *bool   `json:"force"`
 	TargetConf      *int32  `json:"targetConf"`
@@ -46,10 +47,16 @@ type CloseChannelResponse struct {
 }
 
 func CloseChannel(wChan chan interface{}, db *sqlx.DB, c *gin.Context, ccReq CloseChannelRequest, reqId string) (err error) {
-	connectionDetails, err := settings.GetConnectionDetails(db)
+	connectionDetails, err := settings.GetConnectionDetails(db, false, ccReq.NodeId)
 	if err != nil {
 		return errors.New("Error getting node connection details from the db")
 	}
+
+	if len(connectionDetails) == 0 {
+		//log.Debug().Msgf("Node is deleted or disabled")
+		return errors.Newf("Local node disabled or deleted")
+	}
+
 	conn, err := lnd_connect.Connect(
 		connectionDetails[0].GRPCAddress,
 		connectionDetails[0].TLSFileBytes,
@@ -70,6 +77,11 @@ func CloseChannel(wChan chan interface{}, db *sqlx.DB, c *gin.Context, ccReq Clo
 }
 
 func prepareCloseRequest(ccReq CloseChannelRequest) (r lnrpc.CloseChannelRequest, err error) {
+
+	if ccReq.NodeId == 0 {
+		return r, errors.New("Node id is missing")
+	}
+
 	if ccReq.SatPerVbyte != nil && ccReq.TargetConf != nil {
 		return r, errors.New("Cannot set both SatPerVbyte and TargetConf")
 	}

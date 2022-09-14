@@ -67,13 +67,15 @@ func Test_createPolicyRequest(t *testing.T) {
 	chanPoint := "e43bf0d5f03e179c2d107a1a8e4303bca066e883f4dbc0d9394f0c5b0721c7ce:0"
 
 	tests := []struct {
-		name  string
-		input updateChanRequestBody
-		want  lnrpc.PolicyUpdateRequest
+		name    string
+		input   updateChanRequestBody
+		want    lnrpc.PolicyUpdateRequest
+		wantErr bool
 	}{
 		{
-			"Channel point not provided - update all",
+			"Missing node Id",
 			updateChanRequestBody{
+				NodeId:        1,
 				ChannelPoint:  noChanPoint,
 				TimeLockDelta: 18,
 			},
@@ -81,10 +83,25 @@ func Test_createPolicyRequest(t *testing.T) {
 				Scope:         &lnrpc.PolicyUpdateRequest_Global{Global: true},
 				TimeLockDelta: 18,
 			},
+			true,
+		},
+		{
+			"Channel point not provided - update all",
+			updateChanRequestBody{
+				NodeId:        1,
+				ChannelPoint:  noChanPoint,
+				TimeLockDelta: 18,
+			},
+			lnrpc.PolicyUpdateRequest{
+				Scope:         &lnrpc.PolicyUpdateRequest_Global{Global: true},
+				TimeLockDelta: 18,
+			},
+			false,
 		},
 		{
 			"Channel point provided - update one",
 			updateChanRequestBody{
+				NodeId:        1,
 				ChannelPoint:  &chanPoint,
 				TimeLockDelta: 18,
 			},
@@ -99,10 +116,12 @@ func Test_createPolicyRequest(t *testing.T) {
 				},
 				TimeLockDelta: 18,
 			},
+			false,
 		},
 		{
 			"TimeLockDelta < 18",
 			updateChanRequestBody{
+				NodeId:        1,
 				ChannelPoint:  noChanPoint,
 				TimeLockDelta: 0,
 			},
@@ -110,10 +129,12 @@ func Test_createPolicyRequest(t *testing.T) {
 				Scope:         &lnrpc.PolicyUpdateRequest_Global{Global: true},
 				TimeLockDelta: 18,
 			},
+			false,
 		},
 		{
 			"All params provided",
 			updateChanRequestBody{
+				NodeId:        1,
 				ChannelPoint:  &chanPoint,
 				FeeRatePpm:    &feeRatePpm,
 				BaseFeeMsat:   &baseFeeMsat,
@@ -137,12 +158,16 @@ func Test_createPolicyRequest(t *testing.T) {
 				MinHtlcMsat:          uint64(14),
 				MinHtlcMsatSpecified: true,
 			},
+			false,
 		},
 	}
 	for i, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := createPolicyRequest(test.input)
 			if err != nil {
+				if test.wantErr {
+					return
+				}
 				t.Errorf("createPolicyRequest error: %v", err)
 			}
 			if !reflect.DeepEqual(got, test.want) {

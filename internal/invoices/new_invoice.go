@@ -17,8 +17,17 @@ func newInvoice(db *sqlx.DB, req newInvoiceRequest) (r newInvoiceResponse, err e
 		return r, err
 	}
 
-	connectionDetails, err := settings.GetConnectionDetails(db)
-	// TODO: change to select which local node
+	connectionDetails, err := settings.GetConnectionDetails(db, false, req.NodeId)
+	if err != nil {
+		log.Error().Err(err).Msgf("Error getting node connection details from the db: %s", err.Error())
+		return r, errors.New("Error getting node connection details from the db")
+	}
+
+	if len(connectionDetails) == 0 {
+		//log.Debug().Msgf("Node is deleted or disabled")
+		return r, errors.Newf("Local node disabled or deleted")
+	}
+
 	conn, err := lnd_connect.Connect(
 		connectionDetails[0].GRPCAddress,
 		connectionDetails[0].TLSFileBytes,
@@ -50,6 +59,10 @@ func newInvoice(db *sqlx.DB, req newInvoiceRequest) (r newInvoiceResponse, err e
 }
 
 func processInvoiceReq(req newInvoiceRequest) (inv lnrpc.Invoice, err error) {
+
+	if req.NodeId == 0 {
+		return inv, errors.New("Node id is missing")
+	}
 
 	if req.Memo != nil {
 		inv.Memo = *req.Memo

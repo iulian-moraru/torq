@@ -111,7 +111,9 @@ SELECT
   grpc_address,
   tls_data,
   macaroon_data,
-  pub_key
+  pub_key,
+  disabled,
+  deleted
 FROM local_node
 WHERE local_node_id = $1;`, localNodeId)
 	if err != nil {

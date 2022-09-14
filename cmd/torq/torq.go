@@ -174,7 +174,7 @@ func main() {
 						select {
 						case <-startchan:
 
-							nodes, err := settings.GetConnectionDetails(db)
+							nodes, err := settings.GetConnectionDetails(db, true, 0)
 							if err != nil {
 								log.Error().Err(errors.Wrap(err, "Getting connection details")).Send()
 								return

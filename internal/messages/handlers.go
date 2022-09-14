@@ -9,11 +9,13 @@ import (
 )
 
 type SignMessageRequest struct {
+	NodeId     int    `json:"nodeId"`
 	Message    string `json:"message"`
 	SingleHash *bool  `json:"singleHash"`
 }
 
 type VerifyMessageRequest struct {
+	NodeId    int    `json:"nodeId"`
 	Message   string `json:"message"`
 	Signature string `json:"signature"`
 }
