@@ -2,6 +2,7 @@ package torqsrv
 
 import (
 	"fmt"
+	"github.com/lncapital/torq/internal/peers"
 	"github.com/rs/zerolog/log"
 	"net/http"
 	"strconv"
@@ -150,6 +151,11 @@ func registerRoutes(r *gin.Engine, db *sqlx.DB, apiPwd string, restartLNDSub fun
 		messageRoutes := api.Group("messages")
 		{
 			messages.RegisterMessagesRoutes(messageRoutes, db)
+		}
+
+		peerRoutes := api.Group("peers")
+		{
+			peers.RegisterPeersRoutes(peerRoutes, db)
 		}
 
 		settingRoutes := api.Group("settings")
