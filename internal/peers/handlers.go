@@ -6,6 +6,7 @@ import (
 	"github.com/lncapital/torq/pkg/server_errors"
 	"github.com/rs/zerolog/log"
 	"net/http"
+	"strconv"
 )
 
 type lndAddress struct {
@@ -35,9 +36,26 @@ func connectPeerHandler(c *gin.Context, db *sqlx.DB) {
 	}
 
 	c.JSON(http.StatusOK, resp)
+}
 
+func listPeersHandler(c *gin.Context, db *sqlx.DB) {
+
+	nodeId, err := strconv.Atoi(c.Param("nodeId"))
+	latestErr := c.Param("le")
+
+	if err != nil {
+		server_errors.WrapLogAndSendServerError(c, err, "List peers")
+	}
+
+	resp, err := listPeers(db, nodeId, latestErr)
+	if err != nil {
+		server_errors.WrapLogAndSendServerError(c, err, "List peers")
+	}
+
+	c.JSON(http.StatusOK, resp)
 }
 
 func RegisterPeersRoutes(r *gin.RouterGroup, db *sqlx.DB) {
 	r.POST("add", func(c *gin.Context) { connectPeerHandler(c, db) })
+	r.GET("list/:nodeId/*le", func(c *gin.Context) { listPeersHandler(c, db) })
 }

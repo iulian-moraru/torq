@@ -72,6 +72,8 @@ func processRequest(req connectPeerRequest) (r lnrpc.ConnectPeerRequest, err err
 
 	if req.TimeOut != nil {
 		r.Timeout = *req.TimeOut
+	} else {
+		r.Timeout = 30
 	}
 
 	return r, err
