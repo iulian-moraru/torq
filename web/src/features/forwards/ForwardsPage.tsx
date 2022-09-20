@@ -7,7 +7,7 @@ import {
   Options20Regular as OptionsIcon,
 } from "@fluentui/react-icons";
 import Sidebar, { SidebarSection } from "../sidebar/Sidebar";
-import { useUpdateTableViewMutation, useCreateTableViewMutation, useGetTableViewsQuery } from "apiSlice";
+import { useGetTableViewsQuery } from "apiSlice";
 
 import { Clause, FilterCategoryType, FilterInterface } from "features/sidebar/sections/filter/filter";
 
@@ -17,7 +17,7 @@ import TablePageTemplate, {
   TableControlsButtonGroup,
   TableControlsTabsGroup,
 } from "../templates/tablePageTemplate/TablePageTemplate";
-import React, { useState } from "react";
+import { useState } from "react";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import {
   updateColumns,
@@ -36,7 +36,6 @@ import FilterSection from "../sidebar/sections/filter/FilterSection";
 import SortSection, { SortByOptionType } from "../sidebar/sections/sort/SortSectionOld";
 import GroupBySection from "../sidebar/sections/group/GroupBySection";
 import ForwardsDataWrapper from "./ForwardsDataWrapper";
-import { selectCurrentView, selectedViewIndex } from "features/forwards/forwardsSlice";
 import TimeIntervalSelect from "../timeIntervalSelect/TimeIntervalSelect";
 
 type sections = {
@@ -51,26 +50,11 @@ function ForwardsPage() {
 
   useGetTableViewsQuery();
 
-  // const viewResponse = useGetTableViewsQuery();
-  const currentView = useAppSelector(selectCurrentView);
-  const currentViewIndex = useAppSelector(selectedViewIndex);
-  const [updateTableView] = useUpdateTableViewMutation();
-  const [createTableView] = useCreateTableViewMutation();
   const activeColumns = useAppSelector(selectActiveColumns) || [];
   const columns = useAppSelector(selectAllColumns);
   const sortBy = useAppSelector(selectSortBy);
   const groupBy = useAppSelector(selectGroupBy) || "channels";
   const filters = useAppSelector(selectFilters);
-
-  const saveView = () => {
-    const viewMod = { ...currentView };
-    viewMod.saved = true;
-    if (currentView.id === undefined || null) {
-      createTableView({ view: viewMod, index: currentViewIndex });
-      return;
-    }
-    updateTableView(viewMod);
-  };
 
   // Logic for toggling the sidebar
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
@@ -180,7 +164,12 @@ function ForwardsPage() {
     </Sidebar>
   );
 
-  const breadcrumbs = ["Analyse", <Link to={"/analyse/forwards"}>Forwards</Link>];
+  const breadcrumbs = [
+    <span key="b1">&quot;Analyse&quot;</span>,
+    <Link key="b2" to={"/analyse/forwards"}>
+      Forwards
+    </Link>,
+  ];
 
   return (
     <TablePageTemplate

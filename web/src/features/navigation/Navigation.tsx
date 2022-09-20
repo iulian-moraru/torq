@@ -1,4 +1,3 @@
-import React from "react";
 import { useAppDispatch } from "../../store/hooks";
 import { toggleNav } from "./navSlice";
 import classNames from "classnames";
@@ -17,8 +16,6 @@ import styles from "./nav.module.scss";
 
 function Navigation() {
   const dispatch = useAppDispatch();
-
-  const navCollapsed = true;
 
   return (
     <div className={classNames(styles.navigation)}>

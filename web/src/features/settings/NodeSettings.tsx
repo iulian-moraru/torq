@@ -37,8 +37,8 @@ interface nodeProps {
   localNodeId: number;
   collapsed?: boolean;
   addMode?: boolean;
-  onAddSuccess?: Function;
-  onAddFailure?: Function;
+  onAddSuccess?: () => void;
+  onAddFailure?: () => void;
 }
 function NodeSettings({ localNodeId, collapsed, addMode, onAddSuccess }: nodeProps) {
   const toastRef = React.useContext(ToastContext);
@@ -74,7 +74,7 @@ function NodeSettings({ localNodeId, collapsed, addMode, onAddSuccess }: nodePro
 
   const handleDeleteClick = () => {
     if (popoverRef.current) {
-      (popoverRef.current as { close: Function }).close();
+      (popoverRef.current as { close: () => void }).close();
     }
     setShowModalState(true);
   };
@@ -123,11 +123,11 @@ function NodeSettings({ localNodeId, collapsed, addMode, onAddSuccess }: nodePro
     }
   }, [localNodeData]);
 
-  const handleTLSFileChange = (file: File) => {
+  const handleTLSFileChange = (file: File | null) => {
     setLocalState({ ...localState, tlsFile: file, tlsFileName: file ? file.name : undefined });
   };
 
-  const handleMacaroonFileChange = (file: File) => {
+  const handleMacaroonFileChange = (file: File | null) => {
     setLocalState({ ...localState, macaroonFile: file, macaroonFileName: file ? file.name : undefined });
   };
 
@@ -159,7 +159,7 @@ function NodeSettings({ localNodeId, collapsed, addMode, onAddSuccess }: nodePro
         setEnableEnableButtonState(true);
       });
     if (popoverRef.current) {
-      (popoverRef.current as { close: Function }).close();
+      (popoverRef.current as { close: () => void }).close();
     }
   };
 
@@ -220,7 +220,9 @@ function NodeSettings({ localNodeId, collapsed, addMode, onAddSuccess }: nodePro
               <form onSubmit={handleSubmit}>
                 <Select
                   label="Implementation"
-                  onChange={() => {}}
+                  onChange={() => {
+                    return;
+                  }}
                   options={implementationOptions}
                   value={implementationOptions.find((io) => io.value === localState?.implementation)}
                 />
@@ -257,11 +259,11 @@ function NodeSettings({ localNodeId, collapsed, addMode, onAddSuccess }: nodePro
         <Modal title={"Are you sure?"} icon={<DeleteIconHeader />} onClose={handleModalClose} show={showModalState}>
           <div className={styles.deleteConfirm}>
             <p>
-              Deleting the node will prevent you from viewing it's data in Torq. Alternatively set node to disabled to
-              simply stop the data subscription but keep data collected so far.
+              Deleting the node will prevent you from viewing it&apos;s data in Torq. Alternatively set node to disabled
+              to simply stop the data subscription but keep data collected so far.
             </p>
             <p>
-              This operation cannot be undone, type "<span className={styles.red}>delete</span>" to confirm.
+              This operation cannot be undone, type &quot;<span className={styles.red}>delete</span>&quot; to confirm.
             </p>
 
             <TextInput value={deleteConfirmationTextInputState} onChange={handleDeleteConfirmationTextInputChange} />

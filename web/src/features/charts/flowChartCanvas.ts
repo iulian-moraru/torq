@@ -69,19 +69,19 @@ class FlowChartCanvas {
   dataRaw: Array<FlowData> = [];
   data: Array<FlowData> = [];
 
-  container: Selection<HTMLDivElement, {}, HTMLElement, any>;
-  chartContainer: Selection<HTMLDivElement, {}, HTMLElement, any>;
+  container: Selection<HTMLDivElement, Record<string, never>, HTMLElement, any>;
+  chartContainer: Selection<HTMLDivElement, Record<string, never>, HTMLElement, any>;
 
-  labelsContainer: Selection<HTMLDivElement, {}, HTMLElement, any>;
+  labelsContainer: Selection<HTMLDivElement, Record<string, never>, HTMLElement, any>;
 
-  canvas: Selection<HTMLCanvasElement, {}, HTMLElement, any>;
-  interactionLayer: Selection<HTMLCanvasElement, {}, HTMLElement, any>;
+  canvas: Selection<HTMLCanvasElement, Record<string, never>, HTMLElement, any>;
+  interactionLayer: Selection<HTMLCanvasElement, Record<string, never>, HTMLElement, any>;
 
   context: CanvasRenderingContext2D;
   interactionContext: CanvasRenderingContext2D;
 
   constructor(
-    container: Selection<HTMLDivElement, {}, HTMLElement, any>,
+    container: Selection<HTMLDivElement, Record<string, never>, HTMLElement, any>,
     data: Array<FlowData>,
     config: Partial<chartConfig>
   ) {
@@ -123,7 +123,7 @@ class FlowChartCanvas {
       count_out: 0,
     };
     let otherChanOutCount = 0;
-    this.data.forEach((d, i) => {
+    this.data.forEach((d, _) => {
       if ((d[this.config.keyOut] as number) && (d[this.config.keyOut] as number) < threshold) {
         otherChannelsOut.amount_out += d["amount_out"];
         otherChannelsOut.revenue_out += d["revenue_out"];
@@ -150,7 +150,7 @@ class FlowChartCanvas {
       count_out: 0,
     };
     let otherChanInCount = 0;
-    this.data.forEach((d, i) => {
+    this.data.forEach((d, _) => {
       if ((d[this.config.keyIn] as number) && (d[this.config.keyIn] as number) < threshold) {
         otherChannelsIn.amount_in += d["amount_in"];
         otherChannelsIn.revenue_in += d["revenue_in"];
@@ -232,13 +232,13 @@ class FlowChartCanvas {
   }
 
   addResizeListener() {
-    (d3.select(window).node() as EventTarget).addEventListener("resize", (event) => {
+    (d3.select(window).node() as EventTarget).addEventListener("resize", (_) => {
       this.resizeChart();
     });
   }
 
   removeResizeListener() {
-    (d3.select(window).node() as EventTarget).removeEventListener("resize", (event) => {
+    (d3.select(window).node() as EventTarget).removeEventListener("resize", (_) => {
       this.resizeChart();
     });
   }
@@ -318,7 +318,7 @@ class FlowChartCanvas {
   }
 
   addMouseOutListener() {
-    this.canvas.on("mouseleave", (event) => {
+    this.canvas.on("mouseleave", (_) => {
       this.mouseOver = undefined;
       this.clearCanvas();
       this.draw();

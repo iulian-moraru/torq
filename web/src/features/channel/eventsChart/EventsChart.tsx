@@ -1,12 +1,12 @@
 // https://www.pluralsight.com/guides/using-d3.js-inside-a-react-app
 import { useD3 } from "../../charts/useD3";
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import { Selection } from "d3";
 import { ChartCanvas, EventsPlot, LinePlot, BarPlot } from "../../charts/charts";
 import "../../charts/chart.scss";
 import { useAppSelector } from "../../../store/hooks";
 import { selectEventChartKey } from "../channelSlice";
-import {useGetSettingsQuery} from "../../../apiSlice";
+import { useGetSettingsQuery } from "../../../apiSlice";
 
 type EventsChart = {
   data: any[];
@@ -20,10 +20,10 @@ function EventsChart({ data, events, selectedEventTypes, from, to }: EventsChart
   let chart: ChartCanvas;
   let currentSize: [number | undefined, number | undefined] = [undefined, undefined];
   const eventKey = useAppSelector(selectEventChartKey);
-  const settings = useGetSettingsQuery()
+  const settings = useGetSettingsQuery();
 
   // Check and update the chart size if the navigation changes the container size
-  const navCheck: Function = (container: Selection<HTMLDivElement, {}, HTMLElement, any>): Function => {
+  const navCheck = (container: Selection<HTMLDivElement, Record<string, never>, HTMLElement, any>) => {
     return () => {
       const boundingBox = container?.node()?.getBoundingClientRect();
       if (currentSize[0] !== boundingBox?.width || currentSize[1] !== boundingBox?.height) {
@@ -36,7 +36,7 @@ function EventsChart({ data, events, selectedEventTypes, from, to }: EventsChart
 
   // TODO: Change this so that we can update the data without redrawing the entire chart
   const ref = useD3(
-    (container: Selection<HTMLDivElement, {}, HTMLElement, any>) => {
+    (container: Selection<HTMLDivElement, Record<string, never>, HTMLElement, any>) => {
       chart = new ChartCanvas(container, data, {
         from: new Date(from),
         to: new Date(to),
@@ -85,7 +85,6 @@ function EventsChart({ data, events, selectedEventTypes, from, to }: EventsChart
     };
   }, [data, data ? data[0].date : ""]);
 
-  // @ts-ignore
   return <div ref={ref} className={"testing"} />;
 }
 

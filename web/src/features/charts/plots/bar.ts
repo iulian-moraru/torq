@@ -19,9 +19,9 @@ type barInputConfig = Partial<barsConfig> & Required<Pick<barsConfig, "id" | "ke
 
 export class BarPlot extends AbstractPlot {
   config: barsConfig;
-  legend: Selection<HTMLDivElement, {}, HTMLElement, any>;
-  legendTextBox: Selection<HTMLDivElement, {}, HTMLElement, any>;
-  legendColorBox: Selection<HTMLDivElement, {}, HTMLElement, any>;
+  legend: Selection<HTMLDivElement, Record<string, never>, HTMLElement, any>;
+  legendTextBox: Selection<HTMLDivElement, Record<string, never>, HTMLElement, any>;
+  legendColorBox: Selection<HTMLDivElement, Record<string, never>, HTMLElement, any>;
   /**
    * Plots bars on a chart canvas. To use it add it to the plots map on the Chart instance.
    *
@@ -74,7 +74,7 @@ export class BarPlot extends AbstractPlot {
   }
 
   barWidth(): number {
-    return (this.chart.tickWidth());
+    return this.chart.tickWidth();
   }
 
   drawBar(context: CanvasRenderingContext2D, dataPoint: any, fillColor: string) {

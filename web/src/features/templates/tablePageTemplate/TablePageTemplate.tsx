@@ -46,7 +46,7 @@ export default function TablePageTemplate(props: TablePageTemplateProps) {
 
 type TableControlsButtonProps = {
   icon: React.FC<FluentIconsProps>;
-  onClickHandler?: (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => void;
+  onClickHandler?: () => void;
   active?: boolean;
 };
 

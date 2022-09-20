@@ -1,6 +1,6 @@
 // https://www.pluralsight.com/guides/using-d3.js-inside-a-react-app
 import { useD3 } from "../../charts/useD3";
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import { Selection } from "d3";
 import FlowChartCanvas, { FlowData } from "../../charts/flowChartCanvas";
 import { useAppSelector } from "../../../store/hooks";
@@ -16,7 +16,7 @@ function FlowChart({ data }: FlowChart) {
   const flowKey = useAppSelector(selectFlowKeys);
 
   // Check and update the chart size if the navigation changes the container size
-  const navCheck: Function = (container: Selection<HTMLDivElement, {}, HTMLElement, any>): Function => {
+  const navCheck = (container: Selection<HTMLDivElement, Record<string, never>, HTMLElement, any>) => {
     return () => {
       const boundingBox = container?.node()?.getBoundingClientRect();
       if (currentSize[0] !== boundingBox?.width || currentSize[1] !== boundingBox?.height) {
@@ -28,8 +28,11 @@ function FlowChart({ data }: FlowChart) {
   };
 
   const ref = useD3(
-    (container: Selection<HTMLDivElement, {}, HTMLElement, any>) => {
-      const keyOut = (flowKey.value + "_out") as keyof Omit<FlowData, "alias" | "chan_id" | "pub_key" | "channel_point">;
+    (container: Selection<HTMLDivElement, Record<string, never>, HTMLElement, any>) => {
+      const keyOut = (flowKey.value + "_out") as keyof Omit<
+        FlowData,
+        "alias" | "chan_id" | "pub_key" | "channel_point"
+      >;
       const keyIn = (flowKey.value + "_in") as keyof Omit<FlowData, "alias" | "chan_id" | "pub_key" | "channel_point">;
       flowChart = new FlowChartCanvas(container, data, { keyOut: keyOut, keyIn: keyIn });
       flowChart.draw();
@@ -46,7 +49,6 @@ function FlowChart({ data }: FlowChart) {
     };
   }, [data, flowKey]);
 
-  // @ts-ignore
   return <div ref={ref} />;
 }
 

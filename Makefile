@@ -3,9 +3,10 @@ testDbPort = 5433
 backendTest = go test ./... -v -count=1
 frontendTest = cd web && npm i && npm test -- --watchAll=false
 stopDevDb = ($(MAKE) stop-dev-db && false)
+lint = cd web && npm i && npm run lint
 
 .PHONY: test
-test: start-dev-db wait-db test-backend-with-db-stop test-frontend-with-db-stop stop-dev-db
+test: lint start-dev-db wait-db test-backend-with-db-stop test-frontend-with-db-stop stop-dev-db
 	@echo All tests pass!
 
 .PHONY: test-backend-with-db-stop
@@ -74,3 +75,6 @@ stop-dev-env:
 purge-dev-env:
 	go build ./virtual_network/torq_vn &&  go run ./virtual_network/torq_vn purge --db true
 
+.PHONY: lint
+lint:
+	$(lint)

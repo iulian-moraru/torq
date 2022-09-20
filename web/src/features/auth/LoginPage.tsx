@@ -18,7 +18,7 @@ function LoginPage() {
 
   let from = (location.state as LocationState)?.from?.pathname || "/";
   // Don't redirect back to logout.
-  if (from === "/logout" || "/login" || "logout" || "login" || "" || "/") {
+  if (from === "/logout" || from === "/login" || from === "logout" || from === "login" || from === "" || from === "/") {
     from = "/";
   }
 

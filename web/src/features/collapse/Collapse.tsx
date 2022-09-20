@@ -1,5 +1,5 @@
 import { ReactElement, useLayoutEffect, useRef, useState } from "react";
-export default (props: { children: ReactElement; collapsed: boolean; animate: boolean }) => {
+export default function Collapse(props: { children: ReactElement; collapsed: boolean; animate: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
   const [styleState, setStyleState] = useState({
     height: "auto",
@@ -16,4 +16,4 @@ export default (props: { children: ReactElement; collapsed: boolean; animate: bo
       {props.children}
     </div>
   );
-};
+}

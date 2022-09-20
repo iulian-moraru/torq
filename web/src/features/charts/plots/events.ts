@@ -1,5 +1,5 @@
 import ChartCanvas from "../chartCanvas";
-import { AbstractPlot, basePlotConfig, drawConfig } from "./abstract";
+import { AbstractPlot, basePlotConfig } from "./abstract";
 import * as d3 from "d3";
 import eventIcons from "./eventIcons";
 
@@ -29,7 +29,7 @@ export class EventsPlot extends AbstractPlot {
     };
   }
 
-  draw(drawConfig?: drawConfig) {
+  draw() {
     // Don't redraw events if nothing has changed as it is expensive to add/remove html elements
     if (this.lastWidth === this.chart.config.width && this.lastHeight === this.chart.config.height) {
       return;
@@ -48,7 +48,7 @@ export class EventsPlot extends AbstractPlot {
       .selectAll(".event-wrapper")
       .data(
         this.events
-          .map((d: any, i: number) => {
+          .map((d: any, _: number) => {
             return d.date;
           })
           .filter((value: any, index: number, self: any[]) => {
@@ -58,23 +58,23 @@ export class EventsPlot extends AbstractPlot {
       .enter()
       .append("div")
       .attr("class", "event-wrapper")
-      .attr("id", function (d: any, i) {
+      .attr("id", function (_: any, i) {
         return "event-" + i;
       })
-      .attr("style", (d: number, i) => {
+      .attr("style", (d: number, _) => {
         return `position:absolute; left: ${this.xPoint(new Date(d))}px; bottom:5px;`;
       })
       .selectAll(".event-item")
-      .data((d: any, i: number) => {
+      .data((d: any, _: number) => {
         return this.clusteredEvents[d];
       })
       .enter()
       .append("div")
-      .attr("class", (d: any, o) => {
+      .attr("class", (d: any, _) => {
         const outbound = d.outbound ? "outbound" : "inbound";
         return `event-item ${d.type} ${outbound}`;
       })
-      .html((d: any, i) => {
+      .html((d: any, _) => {
         const icon = eventIcons.get(d.type) || "";
         const text = d.value > 1 ? d3.format(".2s")(d.value) : d.value;
         if (d.value === null) {

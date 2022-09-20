@@ -14,24 +14,24 @@ export default function TorqSelect({ selectProps, child }: TorqSelectProps) {
     indicatorSeparator: () => {
       return {};
     },
-    input: (provided: any, state: any) => ({
+    input: (provided: any, _: any) => ({
       ...provided,
       borderRadius: "0px",
       padding: "0",
       margin: "0",
     }),
-    valueContainer: (provided: any, state: any) => ({
+    valueContainer: (provided: any, _: any) => ({
       ...provided,
       paddingLeft: "8px",
       paddingRight: "8px",
       borderRadius: "0px",
     }),
-    dropdownIndicator: (provided: any, state: any) => ({
+    dropdownIndicator: (provided: any, _: any) => ({
       ...provided,
       color: "var(--secondary-1-600)",
       // padding: "0",
     }),
-    control: (provided: any, state: any) => ({
+    control: (provided: any, _: any) => ({
       ...provided,
       border: "0px solid transparent",
       cursor: "pointer",
@@ -62,7 +62,7 @@ export default function TorqSelect({ selectProps, child }: TorqSelectProps) {
       },
       // fontSize: "var(--font-size-small)",
     }),
-    menuList: (provided: any, state: any) => ({
+    menuList: (provided: any, _: any) => ({
       ...provided,
       // background: "",
       border: "1px solid var(--secondary-1-150)",
@@ -70,7 +70,7 @@ export default function TorqSelect({ selectProps, child }: TorqSelectProps) {
       borderRadius: "2px",
       // background: "var(--secondary-1-500)",
     }),
-    menu: (provided: any, state: any) => ({
+    menu: (provided: any, _: any) => ({
       ...provided,
       boxShadow: "none",
     }),

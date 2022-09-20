@@ -115,7 +115,13 @@ function ChannelPage() {
       return { value: i, label: d.ChanId };
     });
   }
-  const breadcrumbs = ["Analyse", "Inspect", <Link to={`/analyse/inspect/${chanId}`}>{chanId}</Link>];
+  const breadcrumbs = [
+    <span key="b1">&quot;Analyse&quot;</span>,
+    <span key="b2">&quot;Inspect&quot;</span>,
+    <Link key="b3" to={`/analyse/inspect/${chanId}`}>
+      {chanId}
+    </Link>,
+  ];
   return (
     <DetailsPageTemplate title={title} titleContent={<TimeIntervalSelect />} breadcrumbs={breadcrumbs}>
       <div className={styles.channelWrapper}>

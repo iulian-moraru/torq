@@ -12,13 +12,13 @@ import {
 import styles from "./columns-section.module.scss";
 import Select, { SelectOptionType } from "./ColumnDropDown";
 import { ColumnMetaData } from "features/table/Table";
-import React, { useState } from "react";
+import { useState } from "react";
 
 interface columnRow {
   column: ColumnMetaData;
   index: number;
-  handleRemoveColumn: Function;
-  handleUpdateColumn: Function;
+  handleRemoveColumn: (index: number) => void;
+  handleUpdateColumn: (columnMetadata: ColumnMetaData, index: number) => void;
 }
 
 const CellOptions: SelectOptionType[] = [
@@ -118,7 +118,7 @@ function ColumnRow({ column, index, handleRemoveColumn, handleUpdateColumn }: co
 interface unselectedColumnRow {
   name: string;
   index: number;
-  handleAddColumn: Function;
+  handleAddColumn: (index: number) => void;
 }
 
 function UnselectedColumn({ name, index, handleAddColumn }: unselectedColumnRow) {
@@ -143,7 +143,7 @@ function UnselectedColumn({ name, index, handleAddColumn }: unselectedColumnRow)
 type ColumnsSectionProps = {
   activeColumns: ColumnMetaData[];
   columns: ColumnMetaData[];
-  handleUpdateColumn: Function;
+  handleUpdateColumn: (updatedColumns: Array<ColumnMetaData>) => void;
 };
 
 function ColumnsSection(props: ColumnsSectionProps) {
@@ -173,7 +173,7 @@ function ColumnsSection(props: ColumnsSectionProps) {
   const draggableColumns = props.activeColumns.slice(1, props.activeColumns.length);
 
   const onDragEnd = (result: any) => {
-    const { destination, source, draggableId } = result;
+    const { destination, source } = result;
 
     // Dropped outside of container
     if (!destination || destination.droppableId !== droppableContainerId) {
@@ -244,5 +244,4 @@ function ColumnsSection(props: ColumnsSectionProps) {
   );
 }
 
-const ColumnsSectionMemo = React.memo(ColumnsSection);
 export default ColumnsSection;

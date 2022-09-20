@@ -1,26 +1,17 @@
 import FilterRow from "./FilterRow";
 import classNames from "classnames";
 import { AddSquare20Regular as AddFilterIcon, AddSquareMultiple20Regular as AddGroupIcon } from "@fluentui/react-icons";
-import React from "react";
-import { SelectOptionType } from "../../../inputs/Select";
 
 import styles from "./filter-section.module.scss";
 import { AndClause, OrClause, Clause, FilterClause, FilterInterface } from "./filter";
 import { ColumnMetaData } from "features/table/Table";
 
-interface filterOptionsInterface {
-  key: string;
-  heading: string;
-  valueType: string;
-  arrayOptions?: Array<SelectOptionType>;
-}
-
 interface filterProps {
   columnsMeta: Array<ColumnMetaData>;
   filters: Clause;
   defaultFilter: FilterInterface;
-  onFilterUpdate: Function;
-  onNoChildrenLeft?: Function;
+  onFilterUpdate: () => void;
+  onNoChildrenLeft?: () => void;
   child: boolean;
 }
 

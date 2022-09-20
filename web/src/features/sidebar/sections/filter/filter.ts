@@ -1,72 +1,86 @@
+// These filter functions can operate on any data
+// Rather than use generics we have opted to just use the any type
+// An alternative approach could be the following generic type instead of any / unkown
+// export type FilterFunc = <T extends Record<K, unknown>, K extends keyof T>(
+//   input: T,
+//   key: K,
+//   parameter: FilterParameterType
+// ) => boolean;
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import clone from "clone";
 import { SelectOption } from "features/forms/Select";
 
-// TODO: Create Documentation with examples
-
 export type FilterCategoryType = "number" | "string" | "date" | "boolean" | "array" | "duration";
-export type FilterParameterType = number | string | Date | boolean | Array<any>;
+export type FilterParameterType = number | string | Date | boolean | Array<unknown>;
+export type FilterFunc = (input: unknown, key: string, parameter: FilterParameterType) => boolean;
 
 // available filter types that can be picked in the UI and a filter function implementation to achieve that
-export const FilterFunctions = new Map<string, Map<string, Function>>([
+export const FilterFunctions = new Map<string, Map<string, FilterFunc>>([
   [
     "number",
-    new Map<string, Function>([
-      ["eq", (input: any, key: string, parameter: number) => input[key] === parameter],
-      ["neq", (input: any, key: string, parameter: number) => input[key] !== parameter],
-      ["gt", (input: any, key: string, parameter: number) => input[key] > parameter],
-      ["gte", (input: any, key: string, parameter: number) => input[key] >= parameter],
-      ["lt", (input: any, key: string, parameter: number) => input[key] < parameter],
-      ["lte", (input: any, key: string, parameter: number) => input[key] <= parameter],
+    new Map<string, FilterFunc>([
+      ["eq", (input: any, key: string, parameter: FilterParameterType) => input[key] === parameter],
+      ["neq", (input: any, key: string, parameter: FilterParameterType) => input[key] !== parameter],
+      ["gt", (input: any, key: string, parameter: FilterParameterType) => input[key] > parameter],
+      ["gte", (input: any, key: string, parameter: FilterParameterType) => input[key] >= parameter],
+      ["lt", (input: any, key: string, parameter: FilterParameterType) => input[key] < parameter],
+      ["lte", (input: any, key: string, parameter: FilterParameterType) => input[key] <= parameter],
     ]),
   ],
   [
     "duration",
-    new Map<string, Function>([
-      ["eq", (input: any, key: string, parameter: number) => input[key] === parameter],
-      ["neq", (input: any, key: string, parameter: number) => input[key] !== parameter],
-      ["gt", (input: any, key: string, parameter: number) => input[key] > parameter],
-      ["gte", (input: any, key: string, parameter: number) => input[key] >= parameter],
-      ["lt", (input: any, key: string, parameter: number) => input[key] < parameter],
-      ["lte", (input: any, key: string, parameter: number) => input[key] <= parameter],
+    new Map<string, FilterFunc>([
+      ["eq", (input: any, key: string, parameter: FilterParameterType) => input[key] === parameter],
+      ["neq", (input: any, key: string, parameter: FilterParameterType) => input[key] !== parameter],
+      ["gt", (input: any, key: string, parameter: FilterParameterType) => input[key] > parameter],
+      ["gte", (input: any, key: string, parameter: FilterParameterType) => input[key] >= parameter],
+      ["lt", (input: any, key: string, parameter: FilterParameterType) => input[key] < parameter],
+      ["lte", (input: any, key: string, parameter: FilterParameterType) => input[key] <= parameter],
     ]),
   ],
   [
     "string",
-    new Map<string, Function>([
-      ["like", (input: any, key: string, parameter: string) => input[key].toLowerCase().includes(parameter)],
-      ["notLike", (input: any, key: string, parameter: string) => !input[key].toLowerCase().includes(parameter)],
+    new Map<string, FilterFunc>([
+      [
+        "like",
+        (input: any, key: string, parameter: FilterParameterType) => input[key].toLowerCase().includes(parameter),
+      ],
+      [
+        "notLike",
+        (input: any, key: string, parameter: FilterParameterType) => !input[key].toLowerCase().includes(parameter),
+      ],
     ]),
   ],
   [
     "boolean",
-    new Map<string, Function>([
-      ["eq", (input: any, key: string, parameter: boolean) => !!input[key] === parameter],
-      ["neq", (input: any, key: string, parameter: boolean) => !input[key] !== parameter],
+    new Map<string, FilterFunc>([
+      ["eq", (input: any, key: string, parameter: FilterParameterType) => !!input[key] === parameter],
+      ["neq", (input: any, key: string, parameter: FilterParameterType) => !input[key] !== parameter],
     ]),
   ],
   [
     "date",
-    new Map<string, Function>([
-      ["eq", (input: any, key: string, parameter: Date) => input[key] === parameter],
-      ["neq", (input: any, key: string, parameter: Date) => input[key] !== parameter],
-      ["gt", (input: any, key: string, parameter: Date) => input[key] > parameter],
-      ["gte", (input: any, key: string, parameter: Date) => input[key] >= parameter],
-      ["lt", (input: any, key: string, parameter: Date) => input[key] < parameter],
-      ["lte", (input: any, key: string, parameter: Date) => input[key] <= parameter],
+    new Map<string, FilterFunc>([
+      ["eq", (input: any, key: string, parameter: FilterParameterType) => input[key] === parameter],
+      ["neq", (input: any, key: string, parameter: FilterParameterType) => input[key] !== parameter],
+      ["gt", (input: any, key: string, parameter: FilterParameterType) => input[key] > parameter],
+      ["gte", (input: any, key: string, parameter: FilterParameterType) => input[key] >= parameter],
+      ["lt", (input: any, key: string, parameter: FilterParameterType) => input[key] < parameter],
+      ["lte", (input: any, key: string, parameter: FilterParameterType) => input[key] <= parameter],
     ]),
   ],
   [
     "array",
-    new Map<string, Function>([
+    new Map<string, FilterFunc>([
       [
         "eq",
-        (input: any, key: string, parameter: Array<any>) =>
-          input[key].filter((value: any) => parameter.includes(value)),
+        (input: any, key: string, parameter: FilterParameterType) =>
+          input[key].filter((value: any) => (parameter as Array<unknown>).includes(value)),
       ],
       [
         "neq",
-        (input: any, key: string, parameter: Array<any>) =>
-          !input[key].filter((value: any) => parameter.includes(value)),
+        (input: any, key: string, parameter: FilterParameterType) =>
+          !input[key].filter((value: any) => (parameter as Array<unknown>).includes(value)),
       ],
     ]),
   ],
@@ -139,7 +153,7 @@ const parseClause = (clause: ClauseWithResult, data: any) => {
       if (!filterFunc) {
         throw new Error("Filter function is not yet defined");
       }
-      clause.result = filterFunc(data, filterClause.filter.key, filterClause.filter.parameter);
+      clause.result = filterFunc(data, filterClause.filter.key ?? "", filterClause.filter.parameter);
       break;
     }
     case "$and": {

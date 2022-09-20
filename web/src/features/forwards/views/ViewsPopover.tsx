@@ -33,9 +33,9 @@ import {
 interface viewRow {
   title: string;
   index: number;
-  handleUpdateView: Function;
-  handleRemoveView: Function;
-  handleSelectView: Function;
+  handleUpdateView: (view: ViewInterface, index: number) => void;
+  handleRemoveView: (index: number) => void;
+  handleSelectView: (index: number) => void;
   singleView: boolean;
 }
 
@@ -50,7 +50,7 @@ function ViewRow({ title, index, handleUpdateView, handleRemoveView, handleSelec
   function handleInputSubmit(e: any) {
     e.preventDefault();
     setEditView(false);
-    handleUpdateView({ title: localTitle }, index);
+    handleUpdateView({ title: localTitle } as ViewInterface, index);
   }
 
   return (

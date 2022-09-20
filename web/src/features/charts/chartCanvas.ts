@@ -1,7 +1,7 @@
 import * as d3 from "d3";
 import { NumberValue, ScaleLinear, ScaleTime, Selection } from "d3";
-import {addHours, subHours, differenceInDays, subDays, differenceInSeconds} from "date-fns";
-import {utcToZonedTime} from "date-fns-tz";
+import { addHours, subHours, differenceInDays, subDays, differenceInSeconds } from "date-fns";
+import { utcToZonedTime } from "date-fns-tz";
 import { BarPlot } from "./plots/bar";
 import clone from "../../clone";
 
@@ -18,7 +18,7 @@ type chartConfig = {
   yAxisPadding: number;
   yAxisMaxOverride: number;
   rightYAxisMaxOverride: number;
-  tickWidth: {days?: number, hours?: number, minutes?: number, seconds?: number};
+  tickWidth: { days?: number; hours?: number; minutes?: number; seconds?: number };
   margin: {
     top: number;
     right: number;
@@ -52,7 +52,7 @@ class ChartCanvas {
     showRightYAxisLabel: false,
     leftYAxisFormatter: d3.format(",.3s"),
     rightYAxisFormatter: d3.format(",.3s"),
-    tickWidth: {days: 1, hours: 0, minutes: 0, seconds: 0},
+    tickWidth: { days: 1, hours: 0, minutes: 0, seconds: 0 },
     margin: {
       top: 10,
       right: 10,
@@ -74,28 +74,28 @@ class ChartCanvas {
   data: Array<any> = [];
   plots: Map<string, object> = new Map<string, object>();
 
-  container: Selection<HTMLDivElement, {}, HTMLElement, any>;
-  canvas: Selection<HTMLCanvasElement, {}, HTMLElement, any>;
+  container: Selection<HTMLDivElement, Record<string, never>, HTMLElement, any>;
+  canvas: Selection<HTMLCanvasElement, Record<string, never>, HTMLElement, any>;
 
-  interactionLayer: Selection<HTMLCanvasElement, {}, HTMLElement, any>;
-  chartContainer: Selection<HTMLDivElement, {}, HTMLElement, any>;
+  interactionLayer: Selection<HTMLCanvasElement, Record<string, never>, HTMLElement, any>;
+  chartContainer: Selection<HTMLDivElement, Record<string, never>, HTMLElement, any>;
 
-  xAxisContainer: Selection<HTMLDivElement, {}, HTMLElement, any>;
-  leftYAxisContainer: Selection<HTMLDivElement, {}, HTMLElement, any>;
-  rightYAxisContainer: Selection<HTMLDivElement, {}, HTMLElement, any>;
+  xAxisContainer: Selection<HTMLDivElement, Record<string, never>, HTMLElement, any>;
+  leftYAxisContainer: Selection<HTMLDivElement, Record<string, never>, HTMLElement, any>;
+  rightYAxisContainer: Selection<HTMLDivElement, Record<string, never>, HTMLElement, any>;
 
-  eventsContainer: Selection<HTMLDivElement, {}, HTMLElement, any>;
-  legendContainer: Selection<HTMLDivElement, {}, HTMLElement, any>;
+  eventsContainer: Selection<HTMLDivElement, Record<string, never>, HTMLElement, any>;
+  legendContainer: Selection<HTMLDivElement, Record<string, never>, HTMLElement, any>;
 
-  xAxisLabelContainer: Selection<HTMLDivElement, {}, HTMLElement, any>;
-  leftYAxisLabelContainer: Selection<HTMLDivElement, {}, HTMLElement, any>;
-  rightYAxisLabelContainer: Selection<HTMLDivElement, {}, HTMLElement, any>;
+  xAxisLabelContainer: Selection<HTMLDivElement, Record<string, never>, HTMLElement, any>;
+  leftYAxisLabelContainer: Selection<HTMLDivElement, Record<string, never>, HTMLElement, any>;
+  rightYAxisLabelContainer: Selection<HTMLDivElement, Record<string, never>, HTMLElement, any>;
 
   context: CanvasRenderingContext2D;
   interactionContext: CanvasRenderingContext2D;
 
   constructor(
-    container: Selection<HTMLDivElement, {}, HTMLElement, any>,
+    container: Selection<HTMLDivElement, Record<string, never>, HTMLElement, any>,
     data: Array<any>,
     config: Partial<chartConfig>
   ) {
@@ -125,11 +125,19 @@ class ChartCanvas {
     this.config.width = this.getWidth();
     this.config.height = this.getHeight();
 
-    const timeOffset = differenceInSeconds(utcToZonedTime(new Date(), this.config.timezone), utcToZonedTime(new Date(), 'UTC'))
+    const timeOffset = differenceInSeconds(
+      utcToZonedTime(new Date(), this.config.timezone),
+      utcToZonedTime(new Date(), "UTC")
+    );
 
-    const start = utcToZonedTime(subHours(this.config.from.getTime() - timeOffset*1000, this.config.xAxisPadding), this.config.timezone);
-    const end = utcToZonedTime(addHours(subDays(this.config.to.getTime() - timeOffset*1000, 0), this.config.xAxisPadding), this.config.timezone);
-
+    const start = utcToZonedTime(
+      subHours(this.config.from.getTime() - timeOffset * 1000, this.config.xAxisPadding),
+      this.config.timezone
+    );
+    const end = utcToZonedTime(
+      addHours(subDays(this.config.to.getTime() - timeOffset * 1000, 0), this.config.xAxisPadding),
+      this.config.timezone
+    );
 
     // Creating a scale
     // The range is the number of pixels the domain will be distributed across
@@ -247,23 +255,23 @@ class ChartCanvas {
   }
 
   tickWidth(): number {
-    let seconds = (this.config.tickWidth.days || 0)* 24 * 60 * 60;
-    seconds += (this.config.tickWidth.hours || 0) * 60* 60;
+    let seconds = (this.config.tickWidth.days || 0) * 24 * 60 * 60;
+    seconds += (this.config.tickWidth.hours || 0) * 60 * 60;
     seconds += (this.config.tickWidth.minutes || 0) * 60;
-    seconds += (this.config.tickWidth.seconds || 0)
-    const milliseconds = (seconds || 86400) * 1000
+    seconds += this.config.tickWidth.seconds || 0;
+    const milliseconds = (seconds || 86400) * 1000;
 
     return (this.config.xScale(milliseconds) || 0) - (this.config.xScale(0) || 0);
   }
 
   removeResizeListener() {
-    (d3.select(window).node() as EventTarget).removeEventListener("resize", (event) => {
+    (d3.select(window).node() as EventTarget).removeEventListener("resize", (_) => {
       this.resizeChart();
     });
   }
 
   addResizeListener() {
-    (d3.select(window).node() as EventTarget).addEventListener("resize", (event) => {
+    (d3.select(window).node() as EventTarget).addEventListener("resize", (_) => {
       this.resizeChart();
     });
     this.drawXAxis();
@@ -339,9 +347,9 @@ class ChartCanvas {
   }
 
   addMouseOutListener() {
-    this.canvas.on("mouseleave", (event) => {
+    this.canvas.on("mouseleave", (_) => {
       this.clearCanvas();
-      this.plots.forEach((plot: any, key: string) => {
+      this.plots.forEach((plot: any, _: string) => {
         plot.draw({});
       });
       this.drawLeftYAxisLabel(0, 0);
@@ -353,7 +361,6 @@ class ChartCanvas {
   addHoverListener() {
     this.canvas.on("mousemove", (event) => {
       const [xPosition, yPosition] = d3.pointer(event);
-      const figure = this.getFigure(xPosition, yPosition);
       this.clearCanvas();
 
       let xIndex: number | undefined = undefined;
@@ -388,7 +395,7 @@ class ChartCanvas {
         rightYAxisValues.push(this.config.rightYScale(rightYValue));
       });
 
-      this.plots.forEach((plot: any, key: string) => {
+      this.plots.forEach((plot: any, _: string) => {
         plot.draw({
           xPosition,
           yPosition,
@@ -587,7 +594,7 @@ class ChartCanvas {
     this.drawRightYAxis();
 
     // Draw each plot on the chart
-    this.plots.forEach((plot, key) => {
+    this.plots.forEach((plot, _) => {
       (plot as BarPlot).draw();
     });
 

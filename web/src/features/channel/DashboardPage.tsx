@@ -43,7 +43,12 @@ function ChannelPage() {
 
   const totalCost: number = historyQuery?.data?.on_chain_cost + historyQuery?.data?.rebalancing_cost / 1000;
 
-  const breadcrumbs = ["Analyse", <Link to={"analyse"}>Summary</Link>];
+  const breadcrumbs = [
+    <span key="b1">&quot;Analyse&quot;</span>,
+    <Link key="b2" to={"analyse"}>
+      Summary
+    </Link>,
+  ];
   return (
     <DetailsPageTemplate title={"Forwards Summary"} titleContent={<TimeIntervalSelect />} breadcrumbs={breadcrumbs}>
       <div className={styles.channelWrapper}>

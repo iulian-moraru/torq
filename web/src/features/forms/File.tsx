@@ -7,7 +7,7 @@ import classNames from "classnames";
 
 interface fileProps {
   label?: string;
-  onFileChange?: Function;
+  onFileChange?: (file: File | null) => void;
   fileName?: string;
 }
 function File({ label, onFileChange, fileName }: fileProps) {

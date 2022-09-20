@@ -1,8 +1,8 @@
 import "./popover.scss";
-import React, { ReactChild, useEffect, useRef, useState } from "react";
+import React, { ReactChild, SetStateAction, useEffect, Dispatch, useRef, useState } from "react";
 import classNames from "classnames";
 
-function useOutsideClose(ref: any, setIsPopoverOpen: Function) {
+function useOutsideClose(ref: any, setIsPopoverOpen: Dispatch<SetStateAction<boolean>>) {
   useEffect(() => {
     function handleClickOutside(event: any) {
       if (ref.current && !ref.current.contains(event.target)) {
@@ -24,7 +24,7 @@ interface PopoverInterface {
   children?: ReactChild;
 }
 
-const PopoverButton = React.forwardRef(({ className, button, children }: PopoverInterface, ref) => {
+const PopoverButton = React.forwardRef(function popoverButton({ className, button, children }: PopoverInterface, ref) {
   const wrapperRef = useRef(null);
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
 

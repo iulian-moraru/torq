@@ -8,7 +8,7 @@ interface ModalProps {
   show: boolean;
   title?: string;
   icon?: React.ReactNode;
-  onClose: Function;
+  onClose: () => void;
 }
 
 const Modal = (props: ModalProps) => {

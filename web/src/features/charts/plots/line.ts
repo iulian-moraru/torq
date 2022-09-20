@@ -16,9 +16,9 @@ type linePlotConfigInit = Partial<linePlotConfig> & basePlotConfig;
 
 export class LinePlot extends AbstractPlot {
   config: linePlotConfig;
-  legend: Selection<HTMLDivElement, {}, HTMLElement, any>;
-  legendTextBox: Selection<HTMLDivElement, {}, HTMLElement, any>;
-  legendColorBox: Selection<HTMLDivElement, {}, HTMLElement, any>;
+  legend: Selection<HTMLDivElement, Record<string, never>, HTMLElement, any>;
+  legendTextBox: Selection<HTMLDivElement, Record<string, never>, HTMLElement, any>;
+  legendColorBox: Selection<HTMLDivElement, Record<string, never>, HTMLElement, any>;
 
   constructor(chart: ChartCanvas, config: linePlotConfigInit) {
     super(chart, config);
@@ -58,10 +58,10 @@ export class LinePlot extends AbstractPlot {
     const yScale = this.config.rightAxis ? this.chart.config.rightYScale : this.chart.config.yScale;
     const line = d3
       .line()
-      .x((d, i): number => {
+      .x((_, i): number => {
         return this.chart.config.xScale(this.chart.data[i].date) || 0;
       })
-      .y((d, i): number => {
+      .y((_, i): number => {
         return yScale(this.chart.data[i][this.config.key]) || 0;
       })
       .context(this.chart.context);
@@ -79,7 +79,7 @@ export class LinePlot extends AbstractPlot {
     this.chart.context.stroke();
 
     if (this.config.labels) {
-      this.chart.data.forEach((d, i) => {
+      this.chart.data.forEach((d, _) => {
         this.chart.context.font = "12px Inter";
         this.chart.context.textAlign = "center";
         this.chart.context.textBaseline = "middle";

@@ -1,13 +1,13 @@
 // https://www.pluralsight.com/guides/using-d3.js-inside-a-react-app
 import { useD3 } from "../../charts/useD3";
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import { Selection } from "d3";
 import ChartCanvas from "../../charts/chartCanvas";
 import "../../charts/chart.scss";
 import { BarPlot, LinePlot } from "../../charts/charts";
 import { selectProfitChartKey } from "../channelSlice";
 import { useAppSelector } from "../../../store/hooks";
-import {useGetSettingsQuery} from "../../../apiSlice";
+import { useGetSettingsQuery } from "../../../apiSlice";
 
 type ProfitsChart = {
   data: any[];
@@ -20,10 +20,10 @@ function ProfitsChart({ data, dashboard, to, from }: ProfitsChart) {
   let chart: ChartCanvas;
   let currentSize: [number | undefined, number | undefined] = [undefined, undefined];
   const profitKey = useAppSelector(selectProfitChartKey);
-  const settings = useGetSettingsQuery()
+  const settings = useGetSettingsQuery();
 
   // Check and update the chart size if the navigation changes the container size
-  const navCheck: Function = (container: Selection<HTMLDivElement, {}, HTMLElement, any>): Function => {
+  const navCheck = (container: Selection<HTMLDivElement, Record<string, never>, HTMLElement, any>) => {
     return () => {
       const boundingBox = container?.node()?.getBoundingClientRect();
       if (currentSize[0] !== boundingBox?.width || currentSize[1] !== boundingBox?.height) {
@@ -36,7 +36,7 @@ function ProfitsChart({ data, dashboard, to, from }: ProfitsChart) {
 
   // TODO: Change this so that we can update the data without redrawing the entire chart
   const ref = useD3(
-    (container: Selection<HTMLDivElement, {}, HTMLElement, any>) => {
+    (container: Selection<HTMLDivElement, Record<string, never>, HTMLElement, any>) => {
       if (dashboard) {
         chart = new ChartCanvas(container, data, {
           from: new Date(from),
@@ -100,7 +100,6 @@ function ProfitsChart({ data, dashboard, to, from }: ProfitsChart) {
     };
   }, [data]);
 
-  // @ts-ignore
   return <div ref={ref} className={"chart-ref"} />;
 }
 

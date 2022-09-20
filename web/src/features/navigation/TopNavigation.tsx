@@ -1,4 +1,3 @@
-import React from "react";
 import { useAppDispatch } from "../../store/hooks";
 import { toggleNav } from "./navSlice";
 import classNames from "classnames";
