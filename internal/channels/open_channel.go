@@ -8,16 +8,19 @@ import (
 	"github.com/cockroachdb/errors"
 	"github.com/jmoiron/sqlx"
 	"github.com/lightningnetwork/lnd/lnrpc"
+	"github.com/lncapital/torq/internal/peers"
 	"github.com/lncapital/torq/internal/settings"
 	"github.com/lncapital/torq/pkg/lnd_connect"
 	"github.com/rs/zerolog/log"
 	"io"
+	"strings"
 )
 
 type OpenChannelRequest struct {
 	NodeId             int     `json:"nodeId"`
 	SatPerVbyte        *uint64 `json:"satPerVbyte"`
 	NodePubKey         string  `json:"nodePubKey"`
+	Host               *string `json:"host"`
 	LocalFundingAmount int64   `json:"localFundingAmount"`
 	PushSat            *int64  `json:"pushSat"`
 	TargetConf         *int32  `json:"targetConf"`
@@ -72,8 +75,15 @@ func OpenChannel(db *sqlx.DB, wChan chan interface{}, req OpenChannelRequest, re
 	defer conn.Close()
 
 	client := lnrpc.NewLightningClient(conn)
-
 	ctx := context.Background()
+
+	//If host provided - check if peer and if needed connect peer
+	if req.NodePubKey != "" && req.Host != nil {
+		log.Debug().Msgf("Host provided. connect peer")
+		if err := checkConnectPeer(client, ctx, req.NodeId, req.NodePubKey, *req.Host); err != nil {
+			return err
+		}
+	}
 
 	//Send open channel request
 	openChanRes, err := client.OpenChannel(ctx, &openChanReq)
@@ -101,6 +111,11 @@ func OpenChannel(db *sqlx.DB, wChan chan interface{}, req OpenChannelRequest, re
 		}
 
 		if err != nil {
+			if strings.Contains(err.Error(), "is not online") {
+				log.Error().Msgf("Peer is not connected")
+				wChan <- errors.Newf("Peer is not connected. Provide full IP")
+				return errors.Newf("Peer is not connected. Provide full IP")
+			}
 			log.Error().Msgf("could not open channel: %v", err)
 			wChan <- errors.Newf("could not open channel: %v", err)
 			return err
@@ -226,4 +241,38 @@ func translateChanPoint(cb []byte, oi uint32) (string, error) {
 	}
 
 	return fmt.Sprintf("%s:%d", ch.String(), oi), nil
+}
+
+func checkConnectPeer(client lnrpc.LightningClient, ctx context.Context, nodeId int, remotePubkey string, host string) (err error) {
+
+	peerList, err := peers.ListPeers(client, ctx, "/le")
+	if err != nil {
+		return err
+	}
+
+	for _, peer := range peerList {
+		if peer.PubKey == remotePubkey {
+			log.Debug().Msgf("Peer is connected")
+			// peer found
+			return nil
+		}
+	}
+
+	req := peers.ConnectPeerRequest{
+		NodeId: nodeId,
+		LndAddress: peers.LndAddress{
+			PubKey: remotePubkey,
+			Host:   host,
+		},
+	}
+
+	_, err = peers.ConnectPeer(client, ctx, req)
+	if err != nil {
+		log.Error().Msgf("Err connecting peer")
+		return err
+	}
+	//connect peer
+	log.Debug().Msgf("Peer connected. Open channel next")
+
+	return nil
 }
