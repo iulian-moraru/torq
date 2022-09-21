@@ -7,7 +7,7 @@ import (
 )
 
 func Test_processRequest(t *testing.T) {
-	addr := lndAddress{
+	addr := LndAddress{
 		PubKey: "03003a3c4df03c5a980589626a69c955126c828d51a58f700ef1c64e03bf3030b0",
 		Host:   "127.0.0.1:10010",
 	}
@@ -16,14 +16,14 @@ func Test_processRequest(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		input   connectPeerRequest
+		input   ConnectPeerRequest
 		want    lnrpc.ConnectPeerRequest
 		wantErr bool
 	}{
 		{
 			"Missing node ID",
-			connectPeerRequest{
-				LndAddress: lndAddress{},
+			ConnectPeerRequest{
+				LndAddress: LndAddress{},
 				Perm:       nil,
 				TimeOut:    nil,
 			},
@@ -39,9 +39,9 @@ func Test_processRequest(t *testing.T) {
 		},
 		{
 			"Missing lnd address - pubkey",
-			connectPeerRequest{
+			ConnectPeerRequest{
 				NodeId: 1,
-				LndAddress: lndAddress{
+				LndAddress: LndAddress{
 					PubKey: "",
 					Host:   "127.0.0.1:10010",
 				},
@@ -60,9 +60,9 @@ func Test_processRequest(t *testing.T) {
 		},
 		{
 			"Missing lnd address - host",
-			connectPeerRequest{
+			ConnectPeerRequest{
 				NodeId: 1,
-				LndAddress: lndAddress{
+				LndAddress: LndAddress{
 					PubKey: "03003a3c4df03c5a980589626a69c955126c828d51a58f700ef1c64e03bf3030b0",
 					Host:   "",
 				},
@@ -81,7 +81,7 @@ func Test_processRequest(t *testing.T) {
 		},
 		{
 			"All params provided",
-			connectPeerRequest{
+			ConnectPeerRequest{
 				NodeId:     1,
 				LndAddress: addr,
 				Perm:       &perm,
