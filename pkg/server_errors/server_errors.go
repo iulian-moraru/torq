@@ -68,3 +68,19 @@ func WrapLogAndSendServerError(c *gin.Context, err error, message string) {
 	log.Error().Err(err).Send()
 	c.JSON(http.StatusInternalServerError, SingleServerError(err.Error()))
 }
+
+func SendBadRequest(c *gin.Context, message string) {
+	c.JSON(http.StatusBadRequest, SingleServerError(message))
+}
+
+func SendUnprocessableEntity(c *gin.Context, message string) {
+	c.JSON(http.StatusUnprocessableEntity, SingleServerError(message))
+}
+
+func SendBadRequestFromError(c *gin.Context, err error) {
+	c.JSON(http.StatusBadRequest, SingleServerError(err.Error()))
+}
+
+func SendUnprocessableEntityFromError(c *gin.Context, err error) {
+	c.JSON(http.StatusUnprocessableEntity, SingleServerError(err.Error()))
+}

@@ -1,0 +1,48 @@
+on:
+  workflow_call:
+jobs:
+  all-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
+        with:
+          go-version-file: "go.mod"
+      - name: Run Tests
+        run: make test
+      - name: Run E2E Tests
+        id: e2e
+        run: make test-e2e-debug
+      - uses: actions/upload-artifact@v2
+        if: ${{ failure() || success() }}
+        with:
+          name: E2E_Video_Recording
+          path: test/e2e/lnd/e2e_videos/
+      - name: Print btcd logs if failure
+        if: always() && (steps.e2e.outcome == 'failure')
+        run: docker logs e2e-btcd
+      - name: Print alice logs if failure
+        if: always() && (steps.e2e.outcome == 'failure')
+        run: docker logs e2e-alice
+      - name: Print bob logs if failure
+        if: always() && (steps.e2e.outcome == 'failure')
+        run: docker logs e2e-bob
+      - name: Print carol logs if failure
+        if: always() && (steps.e2e.outcome == 'failure')
+        run: docker logs e2e-carol
+      - name: Print torq logs if failure
+        if: always() && (steps.e2e.outcome == 'failure')
+        run: docker logs e2e-torq
+      - name: Print torq db logs if failure
+        if: always() && (steps.e2e.outcome == 'failure')
+        run: docker logs e2e-torq-db
+      # setup ssh access if e2e job fails
+      - name: Setup upterm session
+        if: always() && (steps.e2e.outcome == 'failure')
+        timeout-minutes: 30
+        uses: lhotari/action-upterm@v1
+        with:
+          # limits ssh access and adds the ssh public key for the user which triggered the workflow
+          limit-access-to-actor: true
+          # limits ssh access and adds the ssh public keys of the listed GitHub users
+          # limit-access-to-users: githubuser1,githubuser2

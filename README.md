@@ -9,6 +9,7 @@ Torq is a capital management tool for routing nodes on the lightning network.
 ## Quick start
 
 To install Torq run:
+
 ```sh
 sh -c "$(curl -fsSL https://torq.sh)"
 ```
@@ -41,6 +42,7 @@ You do not need sudo and you can check the contents of the installation script h
 https://docs.ln.capital/
 
 ## Join us!
+
 Join our [Telegram group](https://t.me/joinchat/V-Dks6zjBK4xZWY0) for updates on releases
 and feel free to ping us in the telegram group you have questions or need help getting started.
 We would also love to hear your ideas for features or any other feedback you might have.
@@ -60,4 +62,3 @@ We would also love to hear your ideas for features or any other feedback you mig
 ![Torq - Balance over time](./balance-graph.png)
 
 ![Torq - Payments](./payments.png)
-

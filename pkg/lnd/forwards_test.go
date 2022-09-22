@@ -19,6 +19,7 @@ type mockLightningClientForwardingHistory struct {
 	ForwardingEvents []*lnrpc.ForwardingEvent
 	LastOffsetIndex  uint32
 	Error            error
+	CancelFunc       func()
 }
 
 // TODO: Use fuzzy tests:
@@ -26,7 +27,7 @@ type mockLightningClientForwardingHistory struct {
 //   https://go.dev/blog/fuzz-beta
 
 // ForwardingHistory mocks the response of LNDs lnrpc.ForwardingHistory
-func (c mockLightningClientForwardingHistory) ForwardingHistory(ctx context.Context,
+func (c *mockLightningClientForwardingHistory) ForwardingHistory(ctx context.Context,
 	in *lnrpc.ForwardingHistoryRequest,
 	opts ...grpc.CallOption) (*lnrpc.ForwardingHistoryResponse, error) {
 
@@ -34,10 +35,17 @@ func (c mockLightningClientForwardingHistory) ForwardingHistory(ctx context.Cont
 		return nil, c.Error
 	}
 
+	if c.ForwardingEvents == nil {
+		c.CancelFunc()
+		return &lnrpc.ForwardingHistoryResponse{}, nil
+	}
+
 	r := lnrpc.ForwardingHistoryResponse{
 		ForwardingEvents: c.ForwardingEvents,
 		LastOffsetIndex:  c.LastOffsetIndex,
 	}
+
+	c.ForwardingEvents = nil
 
 	return &r, nil
 }
@@ -49,7 +57,7 @@ func TestFetchForwardingHistoryError(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	_, err := fetchForwardingHistory(ctx, mClient, 0, 1000)
+	_, err := fetchForwardingHistory(ctx, &mClient, 0, 1000)
 
 	testutil.Given(t, "While fetching forwarding history")
 
@@ -81,7 +89,7 @@ func TestSubscribeForwardingEvents(t *testing.T) {
 	}
 	//defer db.Close()
 
-	mockTickerInterval := 30 * time.Second
+	mockTickerInterval := 3000 * time.Second
 	me := 1000
 	opt := FwhOptions{
 		MaxEvents: &me,
@@ -89,6 +97,7 @@ func TestSubscribeForwardingEvents(t *testing.T) {
 	}
 
 	mclient := mockLightningClientForwardingHistory{
+		CancelFunc: stopSubFwE,
 		ForwardingEvents: []*lnrpc.ForwardingEvent{
 			{
 				ChanIdIn:    1234,
@@ -141,7 +150,7 @@ func TestSubscribeForwardingEvents(t *testing.T) {
 	// Start subscribing in a goroutine to allow the test to continue simulating time through the
 	// mocked time object.
 	errs.Go(func() error {
-		err := SubscribeForwardingEvents(ctx, mclient, db, &opt)
+		err := SubscribeForwardingEvents(ctx, &mclient, db, &opt)
 		if err != nil {
 			t.Fatal(errors.Wrapf(err, "SubscribeForwardingEvents(%v, %v, %v, %v)", ctx,
 				mclient, db, &opt))
@@ -149,16 +158,17 @@ func TestSubscribeForwardingEvents(t *testing.T) {
 		return nil
 	})
 
-	// Simulate passing intervals
-	numbTicks := 4
+	// Simulate passing intervals, one more than required to process
+	numbTicks := 2
 	for i := 0; i < numbTicks; i++ {
-
 		c.AddTime(mockTickerInterval)
-
 	}
 
-	// Give the goroutine time to act on the mocked time interval
-	time.Sleep(400 * time.Millisecond)
+	// Check for potential errors from the goroutine (SubscribeForwardingEvents)
+	err = errs.Wait()
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	testutil.Given(t, "While running SubscribeForwardingEvents")
 
@@ -180,14 +190,6 @@ func TestSubscribeForwardingEvents(t *testing.T) {
 
 	testutil.WhenF(t, "We need to check that storeForwardingHistory only stores unique records.")
 	{
-		expectedTotal := 4
-		actualTotal := len(mclient.ForwardingEvents)
-
-		if expectedTotal != actualTotal {
-			testutil.Errorf(t, "We expected to mock %d ForwardingEvents but there where %",
-				expectedTotal, actualTotal)
-		}
-
 		var expectedUnique = 3
 		var returned int
 		err := db.QueryRow("select count(*) from forward;").Scan(&returned)
@@ -208,16 +210,6 @@ func TestSubscribeForwardingEvents(t *testing.T) {
 	var expectedDate, _ = time.Parse("2006-01-02 15:04:05-0700 MST", "1970-01-01 00:00:01+0000 UTC")
 	if returnedDate != expectedDate {
 		t.Errorf("Time on the latest forward record (%v) isn't as expected (%v)", returnedDate, expectedDate)
-	}
-
-	// Stop subscribing by canceling the context and ticking to the next iteration.
-	stopSubFwE()
-	c.AddTime(mockTickerInterval)
-
-	// Check for potential errors from the goroutine (SubscribeForwardingEvents)
-	err = errs.Wait()
-	if err != nil {
-		t.Fatal(err)
 	}
 
 	db.Close()

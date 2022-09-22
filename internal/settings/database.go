@@ -71,6 +71,7 @@ SELECT
   grpc_address,
   tls_file_name,
   macaroon_file_name,
+  pub_key,
   disabled,
   deleted
 FROM local_node
@@ -91,7 +92,8 @@ SELECT
   local_node_id,
   grpc_address,
   tls_data,
-  macaroon_data
+  macaroon_data,
+  pub_key
 FROM local_node
 WHERE deleted = False AND disabled = False
 ORDER BY local_node_id asc;`)

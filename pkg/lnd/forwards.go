@@ -178,7 +178,6 @@ func SubscribeForwardingEvents(ctx context.Context, client lightningClientForwar
 			lastTimestamp := lastNs / uint64(time.Second)
 
 			// Keep fetching until LND returns less than the max number of records requested.
-		fetchAll:
 			for {
 				rl.Take() // rate limited to 1 per second, when caught up will normally be 1 every 10 seconds
 				fwh, err := fetchForwardingHistory(ctx, client, lastTimestamp, me)
@@ -196,7 +195,7 @@ func SubscribeForwardingEvents(ctx context.Context, client lightningClientForwar
 				// Stop fetching if there are fewer forwards than max requested
 				// (indicates that we have the last forwarding record)
 				if len(fwh.ForwardingEvents) < me {
-					break fetchAll
+					break
 				}
 			}
 		}

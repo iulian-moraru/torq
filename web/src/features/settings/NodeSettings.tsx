@@ -40,7 +40,11 @@ interface nodeProps {
   onAddSuccess?: () => void;
   onAddFailure?: () => void;
 }
-function NodeSettings({ localNodeId, collapsed, addMode, onAddSuccess }: nodeProps) {
+
+const NodeSettings = React.forwardRef(function NodeSettings(
+  { localNodeId, collapsed, addMode, onAddSuccess }: nodeProps,
+  ref
+) {
   const toastRef = React.useContext(ToastContext);
   const popoverRef = React.useRef();
 
@@ -60,16 +64,27 @@ function NodeSettings({ localNodeId, collapsed, addMode, onAddSuccess }: nodePro
   const [saveEnabledState, setSaveEnabledState] = useState(true);
   const [enableEnableButtonState, setEnableEnableButtonState] = useState(true);
 
+  React.useImperativeHandle(ref, () => ({
+    clear() {
+      clear();
+    },
+  }));
+
+  const clear = () => {
+    setLocalState({ grpcAddress: "", implementation: "" } as localNode);
+  };
+
   React.useEffect(() => {
     if (collapsed != undefined) {
       setCollapsedState(collapsed);
     }
   }, [collapsed]);
 
-  const handleModalClose = () => {
+  const handleConfirmationModalClose = () => {
     setShowModalState(false);
     setDeleteConfirmationTextInputState("");
     setDeleteEnabled(false);
+    setLocalState({} as localNode);
   };
 
   const handleDeleteClick = () => {
@@ -97,12 +112,20 @@ function NodeSettings({ localNodeId, collapsed, addMode, onAddSuccess }: nodePro
     }
     // we are adding new node
     if (!localState.localNodeId) {
-      addLocalNode(form);
-      toastRef?.current?.addToast("Local node added", toastCategory.success);
-      setLocalState({} as localNode);
-      if (onAddSuccess) {
-        onAddSuccess();
-      }
+      addLocalNode(form)
+        .unwrap()
+        .then((_) => {
+          setSaveEnabledState(true);
+          toastRef?.current?.addToast("Local node added", toastCategory.success);
+          if (onAddSuccess) {
+            onAddSuccess();
+          }
+        })
+        .catch((error) => {
+          setSaveEnabledState(true);
+          toastRef?.current?.addToast(error.data["errors"]["server"][0].split(":")[0], toastCategory.error);
+        });
+
       return;
     }
     updateLocalNode({ form, localNodeId: localState.localNodeId })
@@ -224,12 +247,12 @@ function NodeSettings({ localNodeId, collapsed, addMode, onAddSuccess }: nodePro
                     return;
                   }}
                   options={implementationOptions}
-                  value={implementationOptions.find((io) => io.value === localState?.implementation)}
+                  value={implementationOptions.find((io) => io.value === localState.implementation)}
                 />
                 <span id="address">
                   <TextInput
                     label="GRPC Address (IP or Tor)"
-                    value={localState?.grpcAddress}
+                    value={localState.grpcAddress}
                     onChange={handleAddressChange}
                     placeholder="100.100.100.100:10009"
                   />
@@ -256,7 +279,12 @@ function NodeSettings({ localNodeId, collapsed, addMode, onAddSuccess }: nodePro
             </div>
           </>
         </Collapse>
-        <Modal title={"Are you sure?"} icon={<DeleteIconHeader />} onClose={handleModalClose} show={showModalState}>
+        <Modal
+          title={"Are you sure?"}
+          icon={<DeleteIconHeader />}
+          onClose={handleConfirmationModalClose}
+          show={showModalState}
+        >
           <div className={styles.deleteConfirm}>
             <p>
               Deleting the node will prevent you from viewing it&apos;s data in Torq. Alternatively set node to disabled
@@ -282,5 +310,5 @@ function NodeSettings({ localNodeId, collapsed, addMode, onAddSuccess }: nodePro
       </>
     </Box>
   );
-}
+});
 export default NodeSettings;

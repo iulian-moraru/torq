@@ -19,6 +19,7 @@ function Settings() {
   const { data: timeZones = [] } = useGetTimeZonesQuery();
   const [updateSettings] = useUpdateSettingsMutation();
   const toastRef = React.useContext(ToastContext);
+  const addNodeRef = React.useRef(null);
 
   const [showAddNodeState, setShowAddNodeState] = React.useState(false);
   const [settingsState, setSettingsState] = React.useState({} as settings);
@@ -83,6 +84,9 @@ function Settings() {
   };
 
   const handleNewNodeModalOnClose = () => {
+    if (addNodeRef.current) {
+      (addNodeRef.current as { clear: () => void }).clear();
+    }
     setShowAddNodeState(false);
   };
 
@@ -138,7 +142,13 @@ function Settings() {
             </div>
             <Button buttonColor={buttonColor.primary} onClick={addLocalNode} icon={<AddIcon />} text="Add Node" />
             <Modal title={"Add Node"} show={showAddNodeState} onClose={handleNewNodeModalOnClose}>
-              <NodeSettings addMode={true} localNodeId={0} collapsed={false} onAddSuccess={handleOnAddSuccess} />
+              <NodeSettings
+                ref={addNodeRef}
+                addMode={true}
+                localNodeId={0}
+                collapsed={false}
+                onAddSuccess={handleOnAddSuccess}
+              />
             </Modal>
           </div>
         </div>

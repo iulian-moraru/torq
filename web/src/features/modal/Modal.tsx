@@ -17,7 +17,6 @@ const Modal = (props: ModalProps) => {
   };
   const ignore = (e: React.MouseEvent<HTMLDivElement>) => {
     e.stopPropagation();
-    e.preventDefault();
   };
   return (
     <div className={classNames(styles.modal, { [styles.show]: props.show })} onClick={handleClose}>
