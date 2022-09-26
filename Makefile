@@ -1,9 +1,9 @@
 dbContainer = timescale/timescaledb:latest-pg14
 testDbPort = 5433
 backendTest = go test ./... -v -count=1
-frontendTest = cd web && npm i && npm test -- --watchAll=false
+frontendTest = cd web && npm i --legacy-peer-deps && npm test -- --watchAll=false
 stopDevDb = ($(MAKE) stop-dev-db && false)
-lint = cd web && npm i && npm run lint
+lint = cd web && npm i --legacy-peer-deps && npm run lint
 
 .PHONY: test
 test: lint start-dev-db wait-db test-backend-with-db-stop test-frontend-with-db-stop stop-dev-db

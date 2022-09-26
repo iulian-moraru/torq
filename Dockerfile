@@ -7,15 +7,15 @@ COPY go.mod .
 COPY go.sum .
 RUN go mod download
 COPY . .
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build cmd/torq/torq.go
+RUN CGO_ENABLED=0 GOOS=linux go build cmd/torq/torq.go
 
 # frontend build stage
 FROM node:lts-alpine as frontend-builder
 WORKDIR /app
 COPY web/package*.json ./
-RUN npm install
+RUN npm install --legacy-peer-deps
 COPY web/. .
-RUN npm run build
+RUN TSX_COMPILE_ON_ERROR=true ESLINT_NO_DEV_ERRORS=true npm run build
 
 # final stage
 FROM alpine

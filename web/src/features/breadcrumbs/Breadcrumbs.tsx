@@ -13,8 +13,10 @@ function Breadcrumbs(props: BreadcrumbsProps) {
         const isLast = i === totalLength;
         return (
           <span key={i + "-breadcrumb"}>
-            {breadcrumb}
-            {!isLast && <span className={styles.breadcrumbSeparator}> / </span>}
+            <>
+              {breadcrumb}
+              {!isLast && <span className={styles.breadcrumbSeparator}> / </span>}
+            </>
           </span>
         );
       })}
