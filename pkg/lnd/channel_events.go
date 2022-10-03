@@ -18,6 +18,14 @@ import (
 	"time"
 )
 
+type channelEvent struct {
+	Type             string `json:"type"`
+	ChannelEventType string `json:"channelEventType"`
+	ChannelId        uint64 `json:"chanId,omitempty"`
+	ChannelPoint     string `json:"channelPoint"`
+	PubKey           string `json:"pubKey,omitempty"`
+}
+
 func chanPointFromByte(cb []byte, oi uint32) (string, error) {
 
 	ch, err := chainhash.NewHash(cb)
@@ -31,13 +39,17 @@ func chanPointFromByte(cb []byte, oi uint32) (string, error) {
 // storeChannelEvent extracts the timestamp, channel ID and PubKey from the
 // ChannelEvent and converts the original struct to json.
 // Then it's stored in the database in the channel_event table.
-func storeChannelEvent(db *sqlx.DB, ce *lnrpc.ChannelEventUpdate, localNodeId int) error {
+func storeChannelEvent(db *sqlx.DB, ce *lnrpc.ChannelEventUpdate, localNodeId int, wsChan chan interface{}) error {
 
 	timestampMs := time.Now().UTC()
 
 	var ChanID uint64
 	var ChannelPoint string
 	var PubKey string
+	var chanEvent channelEvent
+
+	chanEvent.Type = "channelEvent"
+	chanEvent.ChannelEventType = ce.GetType().String()
 
 	switch ce.Type {
 	case lnrpc.ChannelEventUpdate_OPEN_CHANNEL:
@@ -75,6 +87,11 @@ func storeChannelEvent(db *sqlx.DB, ce *lnrpc.ChannelEventUpdate, localNodeId in
 				db, timestampMs, ce.Type, false, ChanID, ChannelPoint, PubKey, jb)
 		}
 
+		chanEvent.ChannelId = ChanID
+		chanEvent.ChannelPoint = ChannelPoint
+		chanEvent.PubKey = PubKey
+		wsChan <- chanEvent
+
 		return nil
 
 	case lnrpc.ChannelEventUpdate_CLOSED_CHANNEL:
@@ -109,6 +126,11 @@ func storeChannelEvent(db *sqlx.DB, ce *lnrpc.ChannelEventUpdate, localNodeId in
 				db, timestampMs, ce.Type, false, ChanID, ChannelPoint, PubKey, jb)
 		}
 
+		chanEvent.ChannelId = ChanID
+		chanEvent.ChannelPoint = ChannelPoint
+		chanEvent.PubKey = PubKey
+		wsChan <- chanEvent
+
 		return nil
 
 	case lnrpc.ChannelEventUpdate_FULLY_RESOLVED_CHANNEL:
@@ -126,6 +148,10 @@ func storeChannelEvent(db *sqlx.DB, ce *lnrpc.ChannelEventUpdate, localNodeId in
 			return errors.Wrapf(err, `storeChannelEvent -> insertChannelEventExec(%v, %s, %s, %t, %d, %s, %s, %v)`,
 				db, timestampMs, ce.Type, false, ChanID, ChannelPoint, PubKey, jb)
 		}
+
+		chanEvent.ChannelPoint = ChannelPoint
+		wsChan <- chanEvent
+
 	case lnrpc.ChannelEventUpdate_ACTIVE_CHANNEL:
 		c := ce.GetActiveChannel()
 		ChannelPoint, err := chanPointFromByte(c.GetFundingTxidBytes(), c.GetOutputIndex())
@@ -141,6 +167,10 @@ func storeChannelEvent(db *sqlx.DB, ce *lnrpc.ChannelEventUpdate, localNodeId in
 			return errors.Wrapf(err, `storeChannelEvent -> insertChannelEventExec(%v, %s, %s, %t, %d, %s, %s, %v)`,
 				db, timestampMs, ce.Type, false, ChanID, ChannelPoint, PubKey, jb)
 		}
+
+		chanEvent.ChannelPoint = ChannelPoint
+		wsChan <- chanEvent
+
 		return nil
 	case lnrpc.ChannelEventUpdate_INACTIVE_CHANNEL:
 		c := ce.GetInactiveChannel()
@@ -157,6 +187,9 @@ func storeChannelEvent(db *sqlx.DB, ce *lnrpc.ChannelEventUpdate, localNodeId in
 			return errors.Wrapf(err, `storeChannelEvent -> insertChannelEventExec(%v, %s, %s, %t, %d, %s, %s, %v)`,
 				db, timestampMs, ce.Type, false, ChanID, ChannelPoint, PubKey, jb)
 		}
+		chanEvent.ChannelPoint = ChannelPoint
+		wsChan <- chanEvent
+
 		return nil
 	case lnrpc.ChannelEventUpdate_PENDING_OPEN_CHANNEL:
 		c := ce.GetPendingOpenChannel()
@@ -173,6 +206,10 @@ func storeChannelEvent(db *sqlx.DB, ce *lnrpc.ChannelEventUpdate, localNodeId in
 			return errors.Wrapf(err, `storeChannelEvent -> insertChannelEventExec(%v, %s, %s, %t, %d, %s, %s, %v)`,
 				db, timestampMs, ce.Type, false, ChanID, ChannelPoint, PubKey, jb)
 		}
+
+		chanEvent.ChannelPoint = ChannelPoint
+		wsChan <- chanEvent
+
 		return nil
 	default:
 	}
@@ -188,7 +225,7 @@ type lndClientSubscribeChannelEvent interface {
 // SubscribeAndStoreChannelEvents Subscribes to channel events from LND and stores them in the
 // database as a time series
 func SubscribeAndStoreChannelEvents(ctx context.Context, client lndClientSubscribeChannelEvent,
-	db *sqlx.DB, localNodeId int) error {
+	db *sqlx.DB, localNodeId int, wsChan chan interface{}) error {
 
 	cesr := lnrpc.ChannelEventSubscription{}
 	stream, err := client.SubscribeChannelEvents(ctx, &cesr)
@@ -227,7 +264,7 @@ func SubscribeAndStoreChannelEvents(ctx context.Context, client lndClientSubscri
 			continue
 		}
 
-		err = storeChannelEvent(db, chanEvent, localNodeId)
+		err = storeChannelEvent(db, chanEvent, localNodeId, wsChan)
 		if err != nil {
 			fmt.Printf("Subscribe channel events store event error: %v", err)
 			// rate limit for caution but hopefully not needed

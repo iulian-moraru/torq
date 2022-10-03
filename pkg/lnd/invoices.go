@@ -21,6 +21,15 @@ type invoicesClient interface {
 		opts ...grpc.CallOption) (lnrpc.Lightning_SubscribeInvoicesClient, error)
 }
 
+type invoiceUpdate struct {
+	Type        string `json:"type"`
+	AddIndex    uint64 `json:"addIndex"`
+	ValueMSat   int64  `json:"valueMSat"`
+	State       string `json:"state"`
+	AmountPaid  int64  `json:"amountPaid,omitempty"`
+	SettledDate string `json:"settledDate,omitempty"`
+}
+
 type Invoice struct {
 
 	/*
@@ -174,7 +183,6 @@ type Invoice struct {
 }
 
 func fetchLastInvoiceIndexes(db *sqlx.DB) (addIndex uint64, settleIndex uint64, err error) {
-	log.Info().Msgf("Fetch last invoice index")
 	// index starts at 1
 	sqlLatest := `select coalesce(max(add_index),1), coalesce(max(settle_index),1) from invoice;`
 
@@ -189,7 +197,7 @@ func fetchLastInvoiceIndexes(db *sqlx.DB) (addIndex uint64, settleIndex uint64, 
 	return addIndex, settleIndex, nil
 }
 
-func SubscribeAndStoreInvoices(ctx context.Context, client invoicesClient, db *sqlx.DB) error {
+func SubscribeAndStoreInvoices(ctx context.Context, client invoicesClient, db *sqlx.DB, wsChan chan interface{}) error {
 
 	// Get the latest settle and add index to prevent duplicate entries.
 	addIndex, settleIndex, err := fetchLastInvoiceIndexes(db)
@@ -223,9 +231,9 @@ func SubscribeAndStoreInvoices(ctx context.Context, client invoicesClient, db *s
 			if errors.Is(ctx.Err(), context.Canceled) {
 				break
 			}
-			log.Error().Msgf("Subscribe and store invoice stream receive: %v\n", err)
+			log.Error().Msgf("Subscribe and store invoice stream receive: %v\n Reconnecting!", err)
 			// rate limited resubscribe
-			log.Debug().Msg("Attempting reconnect to invoice subscription")
+			//log.Debug().Msg("Attempting reconnect to invoice subscription")
 			for {
 				rl.Take()
 				invoiceStream, err = client.SubscribeInvoices(ctx, &lnrpc.InvoiceSubscription{
@@ -233,10 +241,9 @@ func SubscribeAndStoreInvoices(ctx context.Context, client invoicesClient, db *s
 					SettleIndex: settleIndex,
 				})
 				if err == nil {
-					log.Debug().Msgf("Reconnected to invoice subscription")
+					//log.Debug().Msgf("Reconnected to invoice subscription")
 					break
 				}
-				log.Info().Msgf("Reconnecting to invoice subscription: %v\n", err)
 			}
 			continue
 		}
@@ -255,12 +262,31 @@ func SubscribeAndStoreInvoices(ctx context.Context, client invoicesClient, db *s
 			}
 		}
 
+		invoiceUpdate := invoiceUpdate{
+			Type:      "invoiceUpdate",
+			AddIndex:  invoice.AddIndex,
+			ValueMSat: invoice.ValueMsat,
+			State:     invoice.GetState().String(),
+		}
+
 		err = insertInvoice(db, invoice, destinationPublicKey)
 		if err != nil {
 			log.Error().Msgf("Subscribe and store invoices: %v", err)
 			// rate limit for caution but hopefully not needed
 			rl.Take()
 		}
+
+		//Add other info for settled and accepted states
+		//	Invoice_OPEN     = 0
+		//	Invoice_SETTLED  = 1
+		//	Invoice_CANCELED = 2
+		//	Invoice_ACCEPTED = 3
+		if invoice.State == 1 || invoice.State == 3 {
+			invoiceUpdate.AmountPaid = invoice.AmtPaidMsat
+			invoiceUpdate.SettledDate = time.Unix(invoice.SettleDate, 0).Format(time.UnixDate)
+		}
+
+		wsChan <- invoiceUpdate
 	}
 
 	return nil
