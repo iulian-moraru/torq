@@ -17,7 +17,7 @@ import (
 // fetches data as needed and stores it in the database.
 // It is meant to run as a background task / daemon and is the bases for all
 // of Torqs data collection
-func Start(ctx context.Context, conn *grpc.ClientConn, db *sqlx.DB, localNodeId int) error {
+func Start(ctx context.Context, conn *grpc.ClientConn, db *sqlx.DB, localNodeId int, wsChan chan interface{}) error {
 
 	monitorContext, monitorCancel := context.WithCancel(context.Background())
 
@@ -91,7 +91,7 @@ func Start(ctx context.Context, conn *grpc.ClientConn, db *sqlx.DB, localNodeId 
 
 	// Transactions
 	errs.Go(func() error {
-		err := lnd.SubscribeAndStoreTransactions(ctx, client, db)
+		err := lnd.SubscribeAndStoreTransactions(ctx, client, db, wsChan)
 		if err != nil {
 			return errors.Wrapf(err, "Start->SubscribeAndStoreTransactions(%v, %v, %v)", ctx, client, db)
 		}
@@ -109,7 +109,7 @@ func Start(ctx context.Context, conn *grpc.ClientConn, db *sqlx.DB, localNodeId 
 
 	// // Channel Events
 	errs.Go(func() error {
-		err := lnd.SubscribeAndStoreChannelEvents(ctx, client, db, localNodeId)
+		err := lnd.SubscribeAndStoreChannelEvents(ctx, client, db, localNodeId, wsChan)
 		if err != nil {
 			return errors.Wrapf(err, "Start->SubscribeAndStoreChannelEvents(%v, %v, %v)", ctx, router, db)
 		}
@@ -137,7 +137,7 @@ func Start(ctx context.Context, conn *grpc.ClientConn, db *sqlx.DB, localNodeId 
 
 	// Invoices
 	errs.Go(func() error {
-		err := lnd.SubscribeAndStoreInvoices(ctx, client, db)
+		err := lnd.SubscribeAndStoreInvoices(ctx, client, db, wsChan)
 		if err != nil {
 			return errors.Wrapf(err, "Start->SubscribeAndStoreInvoices(%v, %v, %v)", ctx,
 				client, db)
@@ -161,6 +161,16 @@ func Start(ctx context.Context, conn *grpc.ClientConn, db *sqlx.DB, localNodeId 
 		if err != nil {
 			return errors.Wrapf(err, "Start->SubscribeAndUpdatePayments(%v, %v, %v)", ctx,
 				client, db)
+		}
+		return nil
+	})
+
+	// Peer Events
+	errs.Go(func() error {
+		err := lnd.SubscribePeerEvents(ctx, client, wsChan)
+		if err != nil {
+			return errors.Wrapf(err, "Start->SubscribePeerEvents(%v, %v)", ctx,
+				client)
 		}
 		return nil
 	})

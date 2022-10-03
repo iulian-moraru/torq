@@ -12,6 +12,13 @@ import (
 	"time"
 )
 
+type txUpdate struct {
+	Type      string `json:"type"`
+	Amount    int64  `json:"amount"`
+	TimeStamp string `json:"timeStamp"`
+	TotalFees int64  `json:"totalFees"`
+}
+
 func fetchLastTxHeight(db *sqlx.DB) (txHeight int32, err error) {
 
 	sqlLatest := `select coalesce(max(block_height),1) from tx;`
@@ -53,7 +60,7 @@ func ImportTransactions(ctx context.Context, client lnrpc.LightningClient, db *s
 
 // SubscribeAndStoreTransactions Subscribes to on-chain transaction events from LND and stores them in the
 // database as a time series. It will also import unregistered transactions on startup.
-func SubscribeAndStoreTransactions(ctx context.Context, client lnrpc.LightningClient, db *sqlx.DB) error {
+func SubscribeAndStoreTransactions(ctx context.Context, client lnrpc.LightningClient, db *sqlx.DB, wsChan chan interface{}) error {
 
 	// Imports transactions not captured on the stream
 	err := ImportTransactions(ctx, client, db)
@@ -103,6 +110,15 @@ func SubscribeAndStoreTransactions(ctx context.Context, client lnrpc.LightningCl
 				rl.Take()
 				continue
 			}
+
+			txUpd := txUpdate{
+				Type:      "txUpdate",
+				Amount:    tx.Amount,
+				TimeStamp: time.Unix(tx.TimeStamp, 0).Format(time.UnixDate),
+				TotalFees: tx.TotalFees,
+			}
+
+			wsChan <- txUpd
 		}
 	}
 

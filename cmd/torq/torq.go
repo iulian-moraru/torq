@@ -22,6 +22,7 @@ import (
 
 var startchan = make(chan struct{})
 var stopchan = make(chan struct{})
+var wsChan = make(chan interface{})
 
 type subscriptions struct {
 	mu          sync.RWMutex
@@ -197,7 +198,7 @@ func main() {
 										return
 									}
 
-									err = subscribe.Start(ctx, conn, db, node.LocalNodeId)
+									err = subscribe.Start(ctx, conn, db, node.LocalNodeId, wsChan)
 									if err != nil {
 										log.Error().Err(err).Send()
 										// only log the error, don't return
@@ -227,7 +228,7 @@ func main() {
 
 			}
 
-			torqsrv.Start(c.Int("torq.port"), c.String("torq.password"), db, RestartLNDSubscription)
+			torqsrv.Start(c.Int("torq.port"), c.String("torq.password"), db, wsChan, RestartLNDSubscription)
 
 			return nil
 		},

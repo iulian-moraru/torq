@@ -28,12 +28,12 @@ import (
 	"github.com/ulule/limiter/v3/drivers/store/memory"
 )
 
-func Start(port int, apiPswd string, db *sqlx.DB, restartLNDSub func() error) {
+func Start(port int, apiPswd string, db *sqlx.DB, wsChan chan interface{}, restartLNDSub func() error) {
 	r := gin.Default()
 
 	auth.CreateSession(r, apiPswd)
 
-	registerRoutes(r, db, apiPswd, restartLNDSub)
+	registerRoutes(r, db, apiPswd, wsChan, restartLNDSub)
 
 	fmt.Println("Listening on port " + strconv.Itoa(port))
 
@@ -81,11 +81,11 @@ var wsUpgrade = websocket.Upgrader{
 	},
 }
 
-func registerRoutes(r *gin.Engine, db *sqlx.DB, apiPwd string, restartLNDSub func() error) {
+func registerRoutes(r *gin.Engine, db *sqlx.DB, apiPwd string, wsChan chan interface{}, restartLNDSub func() error) {
 	r.Use(gzip.Gzip(gzip.DefaultCompression))
 	// Websocket
 	ws := r.Group("/ws")
-	ws.GET("", func(c *gin.Context) { WebsocketHandler(c, db, apiPwd) })
+	ws.GET("", func(c *gin.Context) { WebsocketHandler(c, db, apiPwd, wsChan) })
 
 	applyCors(r)
 	registerStaticRoutes(r)
