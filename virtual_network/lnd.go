@@ -13,6 +13,39 @@ import (
 const defautDelayMS = 2000          // 2s
 const defaultMaxDurationMS = 120000 // 60s
 
+type channel struct {
+	Active                bool          `json:"active,omitempty"`
+	RemotePubkey          string        `json:"remote_pubkey,omitempty"`
+	ChannelPoint          string        `json:"channel_point,omitempty"`
+	ChanId                string        `json:"chan_id,omitempty"`
+	Capacity              string        `json:"capacity,omitempty"`
+	LocalBalance          string        `json:"local_balance,omitempty"`
+	RemoteBalance         string        `json:"remote_balance,omitempty"`
+	CommitFee             string        `json:"commit_fee,omitempty"`
+	CommitWeight          string        `json:"commit_weight,omitempty"`
+	FeePerKw              string        `json:"fee_per_kw,omitempty"`
+	UnsettledBalance      string        `json:"unsettled_balance,omitempty"`
+	TotalSatoshisSent     string        `json:"total_satoshis_sent,omitempty"`
+	TotalSatoshisReceived string        `json:"total_satoshis_received,omitempty"`
+	NumUpdates            string        `json:"num_updates,omitempty"`
+	PendingHtlcs          []interface{} `json:"pending_htlcs,omitempty"`
+	CsvDelay              int           `json:"csv_delay,omitempty"`
+	Private               bool          `json:"private,omitempty"`
+	Initiator             bool          `json:"initiator,omitempty"`
+	ChanStatusFlags       string        `json:"chan_status_flags,omitempty"`
+	LocalChanReserveSat   string        `json:"local_chan_reserve_sat,omitempty"`
+	RemoteChanReserveSat  string        `json:"remote_chan_reserve_sat,omitempty"`
+	StaticRemoteKey       bool          `json:"static_remote_key,omitempty"`
+	CommitmentType        string        `json:"commitment_type,omitempty"`
+	Lifetime              string        `json:"lifetime,omitempty"`
+	Uptime                string        `json:"uptime,omitempty"`
+	CloseAddress          string        `json:"close_address,omitempty"`
+	PushAmountSat         string        `json:"push_amount_sat,omitempty"`
+	ThawHeight            int           `json:"thaw_height,omitempty"`
+	LocalConstraints      struct{}      `json:"local_constraints"`
+	RemoteConstraints     struct{}      `json:"remote_constraints"`
+}
+
 func GetChannelBalance(ctx context.Context, cli *client.Client,
 	container dockercontainer.ContainerCreateCreatedBody) (balance string, err error) {
 	err = Retry(func() error {
@@ -310,4 +343,57 @@ func GetOnchainBalance(ctx context.Context, cli *client.Client, container docker
 	}
 	return balance, nil
 
+}
+
+func ListNodeChannels(ctx context.Context, cli *client.Client,
+	container dockercontainer.ContainerCreateCreatedBody, pubkey string) (channels []string, err error) {
+	err = Retry(func() error {
+		var channelsList struct {
+			Channels []channel `json:"channels"`
+		}
+		cmd := []string{"lncli", "--network=simnet", "listchannels", "--peer=" + pubkey}
+		err := ExecJSONReturningCommand(ctx, cli, container, cmd, &channelsList)
+		if err != nil {
+			return errors.Wrapf(err, "Running exec command on %s", container.ID)
+		}
+		if len(channelsList.Channels) == 0 {
+			return nil
+		}
+
+		for _, openedChans := range channelsList.Channels {
+			channels = append(channels, openedChans.ChannelPoint)
+		}
+		return nil
+	}, defautDelayMS, defaultMaxDurationMS)
+	if err != nil {
+		return nil, errors.Wrap(err, "Channels list")
+	}
+	return channels, nil
+}
+
+func AddressSendCoins(ctx context.Context, cli *client.Client,
+	container dockercontainer.ContainerCreateCreatedBody, address string, amt string) (txId string, err error) {
+	err = Retry(func() error {
+		var transID struct {
+			TxId string `json:"txId"`
+		}
+		cmd := []string{"lncli", "--network=simnet", "sendcoins", address, amt}
+		err := ExecJSONReturningCommand(ctx, cli, container, cmd, &transID)
+		if err != nil {
+			log.Println("Error ", err)
+			return errors.Wrapf(err, "Running exec command on %s", container.ID)
+		}
+
+		if transID.TxId == "" {
+			return errors.New("Invalid Txid")
+		}
+
+		txId = transID.TxId
+
+		return nil
+	}, defautDelayMS, defaultMaxDurationMS)
+	if err != nil {
+		return "", errors.Wrap(err, "Channels list")
+	}
+	return txId, nil
 }

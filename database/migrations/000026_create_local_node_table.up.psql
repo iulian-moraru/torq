@@ -9,8 +9,3 @@ CREATE TABLE local_node (
   created_on TIMESTAMPTZ NOT NULL,
   updated_on TIMESTAMPTZ NULL
 );
-
-INSERT INTO local_node (
-  implementation ,
-  created_on
-) values ('LND', now());

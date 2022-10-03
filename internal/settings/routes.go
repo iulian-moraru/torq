@@ -166,11 +166,11 @@ func addLocalNodeHandler(c *gin.Context, db *sqlx.DB, restartLNDSub func() error
 
 		publicKey, err := getPublicKeyFromNode(*localNode.GRPCAddress, tlsCert, macaroonFile)
 		if err != nil {
-			server_errors.LogAndSendServerError(c, err)
+			server_errors.WrapLogAndSendServerError(c, err, "Getting public key from node")
 			return
 		}
 		for _, existingNode := range existingNodes {
-			if *existingNode.PubKey == publicKey {
+			if existingNode.PubKey != nil && *existingNode.PubKey == publicKey {
 
 				server_errors.SendUnprocessableEntity(c, "This node already exists")
 				return
@@ -274,7 +274,7 @@ func updateLocalNodeHandler(c *gin.Context, db *sqlx.DB, restartLNDSub func() er
 			return
 		}
 
-		if publicKey != *existingNodeDetails.PubKey {
+		if existingNodeDetails.PubKey != nil && publicKey != *existingNodeDetails.PubKey {
 			server_errors.SendUnprocessableEntity(c, "Pubkey does not match, create a new node instead of updating this one")
 			return
 		}

@@ -1,26 +1,34 @@
-import Table, { ColumnMetaData } from "features/table/Table";
-import { useGetPaymentsQuery } from "apiSlice";
-import { Link } from "react-router-dom";
 import {
   ArrowSortDownLines20Regular as SortIcon,
   ColumnTriple20Regular as ColumnsIcon,
   Filter20Regular as FilterIcon,
+  MoneyHand20Regular as TransactionIcon,
   Options20Regular as OptionsIcon,
 } from "@fluentui/react-icons";
-import Sidebar, { SidebarSection } from "features/sidebar/Sidebar";
+import { useGetPaymentsQuery } from "apiSlice";
+import clone from "clone";
+import { CREATE_PAYMENT } from "constants/routes";
+import Button, { buttonColor } from "features/buttons/Button";
+import useLocalStorage from "features/helpers/useLocalStorage";
+import ColumnsSection from "features/sidebar/sections/columns/ColumnsSection";
+import { FilterCategoryType } from "features/sidebar/sections/filter/filter";
+import SortSection, { OrderBy } from "features/sidebar/sections/sort/SortSection";
+import Sidebar from "features/sidebar/Sidebar";
+import Pagination from "features/table/pagination/Pagination";
+import Table, { ColumnMetaData } from "features/table/Table";
 import TablePageTemplate, {
   TableControlsButton,
   TableControlsButtonGroup,
   TableControlSection,
 } from "features/templates/tablePageTemplate/TablePageTemplate";
 import { useState } from "react";
-import TransactTabs from "../TransactTabs";
-import Pagination from "features/table/pagination/Pagination";
-import useLocalStorage from "features/helpers/useLocalStorage";
-import SortSection, { OrderBy } from "features/sidebar/sections/sort/SortSection";
-import FilterSection from "../../sidebar/sections/filter/FilterSection";
-import { Clause, deserialiseQuery, FilterInterface } from "../../sidebar/sections/filter/filter";
+import { useLocation } from "react-router";
+import { Link, useNavigate } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "../../../store/hooks";
+import { SectionContainer } from "../../section/SectionContainer";
+import { Clause, deserialiseQuery, FilterInterface } from "../../sidebar/sections/filter/filter";
+import FilterSection from "../../sidebar/sections/filter/FilterSection";
+import TransactTabs from "../TransactTabs";
 import {
   selectActiveColumns,
   selectAllColumns,
@@ -28,9 +36,6 @@ import {
   updateColumns,
   updatePaymentsFilters,
 } from "./paymentsSlice";
-import { FilterCategoryType } from "features/sidebar/sections/filter/filter";
-import ColumnsSection from "features/sidebar/sections/columns/ColumnsSection";
-import clone from "clone";
 
 type sections = {
   filter: boolean;
@@ -70,6 +75,7 @@ function PaymentsPage() {
   const allColumns = useAppSelector(selectAllColumns);
 
   const dispatch = useAppDispatch();
+  const navigate = useNavigate();
   const filters = useAppSelector(selectPaymentsFilters);
 
   const paymentsResponse = useGetPaymentsQuery({
@@ -131,18 +137,20 @@ function PaymentsPage() {
     };
   };
 
+  const location = useLocation();
+
   const tableControls = (
     <TableControlSection>
       <TransactTabs />
       <TableControlsButtonGroup>
-        {/*<Button*/}
-        {/*  buttonColor={buttonColor.green}*/}
-        {/*  text={"New"}*/}
-        {/*  icon={<TransactionIcon />}*/}
-        {/*  onClick={() => {*/}
-        {/*    setShowModalState(true);*/}
-        {/*  }}*/}
-        {/*/>*/}
+        <Button
+          buttonColor={buttonColor.green}
+          text={"New"}
+          icon={<TransactionIcon />}
+          onClick={() => {
+            navigate(CREATE_PAYMENT, { state: { background: location } });
+          }}
+        />
         <TableControlsButton onClickHandler={() => setSidebarExpanded(!sidebarExpanded)} icon={OptionsIcon} />
       </TableControlsButtonGroup>
     </TableControlSection>
@@ -207,17 +215,21 @@ function PaymentsPage() {
     dispatch(updateColumns({ columns: columns }));
   };
 
+  const handleModalClose = () => {
+    navigate("/transactions/payments");
+  };
+
   const sidebar = (
     <Sidebar title={"Options"} closeSidebarHandler={closeSidebarHandler()}>
-      <SidebarSection
+      <SectionContainer
         title={"Columns"}
         icon={ColumnsIcon}
         expanded={activeSidebarSections.columns}
         handleToggle={sidebarSectionHandler("columns")}
       >
         <ColumnsSection columns={allColumns} activeColumns={activeColumns} handleUpdateColumn={updateColumnsHandler} />
-      </SidebarSection>
-      <SidebarSection
+      </SectionContainer>
+      <SectionContainer
         title={"Filter"}
         icon={FilterIcon}
         expanded={activeSidebarSections.filter}
@@ -229,15 +241,15 @@ function PaymentsPage() {
           filterUpdateHandler={handleFilterUpdate}
           defaultFilter={defaultFilter}
         />
-      </SidebarSection>
-      <SidebarSection
+      </SectionContainer>
+      <SectionContainer
         title={"Sort"}
         icon={SortIcon}
         expanded={activeSidebarSections.sort}
         handleToggle={sidebarSectionHandler("sort")}
       >
         <SortSection columns={sortableColumns} orderBy={orderBy} updateHandler={handleSortUpdate} />
-      </SidebarSection>
+      </SectionContainer>
     </Sidebar>
   );
 

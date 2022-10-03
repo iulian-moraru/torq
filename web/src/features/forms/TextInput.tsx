@@ -3,12 +3,13 @@ import React from "react";
 
 interface textInputProps {
   label?: string;
-  value?: string;
+  value?: string | number;
   placeholder?: string;
-  onChange?: (value: string) => void;
+  inputType?: "text" | "number" | "email" | "password" | "search";
+  onChange?: (value: string | number) => void;
 }
-function TextInput({ label, value, placeholder, onChange }: textInputProps) {
-  const [localValue, setLocalValue] = React.useState("" as string | undefined);
+function TextInput({ label, value, placeholder, inputType, onChange }: textInputProps) {
+  const [localValue, setLocalValue] = React.useState<string | number | undefined>("");
   React.useEffect(() => {
     if (value === undefined) {
       return;
@@ -25,7 +26,7 @@ function TextInput({ label, value, placeholder, onChange }: textInputProps) {
         <span>{label}</span>
       </div>
       <input
-        type="text"
+        type={inputType}
         placeholder={placeholder}
         className={styles.textInput}
         value={localValue}

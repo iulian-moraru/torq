@@ -22,7 +22,7 @@ import {
   updateViewsOrder,
 } from "features/forwards/forwardsSlice";
 import Popover from "features/popover/Popover";
-import Button, { buttonColor } from "features/buttons/Button";
+import Button, { buttonColor, buttonSize } from "features/buttons/Button";
 import {
   useCreateTableViewMutation,
   useUpdateTableViewMutation,
@@ -30,14 +30,14 @@ import {
   useUpdateTableViewsOrderMutation,
 } from "apiSlice";
 
-interface viewRow {
+type viewRow = {
   title: string;
   index: number;
   handleUpdateView: (view: ViewInterface, index: number) => void;
   handleRemoveView: (index: number) => void;
   handleSelectView: (index: number) => void;
   singleView: boolean;
-}
+};
 
 function ViewRow({ title, index, handleUpdateView, handleRemoveView, handleSelectView, singleView }: viewRow) {
   const [editView, setEditView] = useState(false);
@@ -199,7 +199,13 @@ function ViewsPopover() {
             )}
           </Droppable>
           <div className={styles.buttonsRow}>
-            <Button buttonColor={buttonColor.ghost} text={"Add View"} icon={<AddIcon />} onClick={addView} />
+            <Button
+              buttonColor={buttonColor.ghost}
+              buttonSize={buttonSize.small}
+              text={"Add View"}
+              icon={<AddIcon />}
+              onClick={addView}
+            />
           </div>
         </div>
       </DragDropContext>

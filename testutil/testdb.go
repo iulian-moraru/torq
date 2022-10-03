@@ -141,6 +141,11 @@ func (srv *Server) NewTestDatabase(migrate bool) (*sqlx.DB, error) {
 		if err != nil {
 			return nil, err
 		}
+
+		_, err = db.Exec("INSERT INTO local_node (implementation, created_on) VALUES ('LND', $1);", time.Now())
+		if err != nil {
+			return nil, errors.Wrap(err, "Inserting default local_node for testing")
+		}
 	}
 
 	return db, nil

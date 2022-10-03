@@ -1,14 +1,17 @@
-import { render, screen } from "@testing-library/react";
-import App from "./App";
+import { render } from "@testing-library/react";
 import { Provider } from "react-redux";
+import { BrowserRouter } from "react-router-dom";
+import App from "./App";
 import { store } from "./store/store";
 
 test("renders login page", () => {
-  render(
-    <Provider store={store}>
-      <App />
-    </Provider>
+  const { getByText } = render(
+    <BrowserRouter>
+      <Provider store={store}>
+        <App />
+      </Provider>
+    </BrowserRouter>
   );
-  const elemane = screen.getByText(/login/i);
-  expect(elemane).toBeInTheDocument();
+
+  expect(getByText(/login/i)).toBeInTheDocument();
 });

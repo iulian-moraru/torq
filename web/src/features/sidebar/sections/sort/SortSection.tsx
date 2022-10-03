@@ -1,14 +1,14 @@
 import { memo, useMemo } from "react";
-import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
+import { DragDropContext, Draggable, Droppable } from "react-beautiful-dnd";
 import {
-  Delete16Regular as DismissIcon,
-  ReOrder16Regular as ReOrderIcon,
   AddSquare20Regular as AddIcon,
   ArrowSortDownLines16Regular as SortDescIcon,
+  Delete16Regular as DismissIcon,
+  ReOrder16Regular as ReOrderIcon,
 } from "@fluentui/react-icons";
 import DropDown from "./SortDropDown";
 import { ColumnMetaData } from "features/table/Table";
-import Button, { buttonColor } from "features/buttons/Button";
+import Button, { buttonColor, buttonSize } from "features/buttons/Button";
 import styles from "./sort.module.scss";
 import classNames from "classnames";
 import { ActionMeta } from "react-select";
@@ -188,7 +188,7 @@ const SortSection = (props: SortSectionProps) => {
         <div className={styles.buttonsRow}>
           <Button
             buttonColor={buttonColor.ghost}
-            className={"small"}
+            buttonSize={buttonSize.small}
             onClick={() => handleAddSort()}
             text={"Add"}
             icon={<AddIcon />}

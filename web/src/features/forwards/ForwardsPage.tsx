@@ -6,7 +6,7 @@ import {
   ArrowJoin20Regular as GroupIcon,
   Options20Regular as OptionsIcon,
 } from "@fluentui/react-icons";
-import Sidebar, { SidebarSection } from "../sidebar/Sidebar";
+import Sidebar from "../sidebar/Sidebar";
 import { useGetTableViewsQuery } from "apiSlice";
 
 import { Clause, FilterCategoryType, FilterInterface } from "features/sidebar/sections/filter/filter";
@@ -37,6 +37,7 @@ import SortSection, { SortByOptionType } from "../sidebar/sections/sort/SortSect
 import GroupBySection from "../sidebar/sections/group/GroupBySection";
 import ForwardsDataWrapper from "./ForwardsDataWrapper";
 import TimeIntervalSelect from "../timeIntervalSelect/TimeIntervalSelect";
+import { SectionContainer } from "../section/SectionContainer";
 
 type sections = {
   filter: boolean;
@@ -44,7 +45,6 @@ type sections = {
   group: boolean;
   columns: boolean;
 };
-
 function ForwardsPage() {
   const dispatch = useAppDispatch();
 
@@ -121,16 +121,16 @@ function ForwardsPage() {
 
   const sidebar = (
     <Sidebar title={"Table Options"} closeSidebarHandler={closeSidebarHandler()}>
-      <SidebarSection
+      <SectionContainer
         title={"Columns"}
         icon={ColumnsIcon}
         expanded={activeSidebarSections.columns}
         handleToggle={sidebarSectionHandler("columns")}
       >
         <ColumnsSection columns={columns} activeColumns={activeColumns} handleUpdateColumn={updateColumnsHandler} />
-      </SidebarSection>
+      </SectionContainer>
 
-      <SidebarSection
+      <SectionContainer
         title={"Filter"}
         icon={FilterIcon}
         expanded={activeSidebarSections.filter}
@@ -142,25 +142,25 @@ function ForwardsPage() {
           filterUpdateHandler={handleFilterUpdate}
           defaultFilter={defaultFilter}
         />
-      </SidebarSection>
+      </SectionContainer>
 
-      <SidebarSection
+      <SectionContainer
         title={"Sort"}
         icon={SortIcon}
         expanded={activeSidebarSections.sort}
         handleToggle={sidebarSectionHandler("sort")}
       >
         <SortSection columns={columns} orderBy={sortBy} updateSortByHandler={handleSortUpdate} />
-      </SidebarSection>
+      </SectionContainer>
 
-      <SidebarSection
+      <SectionContainer
         title={"Group"}
         icon={GroupIcon}
         expanded={activeSidebarSections.group}
         handleToggle={sidebarSectionHandler("group")}
       >
         <GroupBySection groupBy={groupBy} groupByHandler={handleGroupByUpdate} />
-      </SidebarSection>
+      </SectionContainer>
     </Sidebar>
   );
 
@@ -180,7 +180,9 @@ function ForwardsPage() {
       sidebar={sidebar}
       tableControls={tableControls}
     >
-      <ForwardsDataWrapper activeColumns={activeColumns} />
+      <>
+        <ForwardsDataWrapper activeColumns={activeColumns} />
+      </>
     </TablePageTemplate>
   );
 }

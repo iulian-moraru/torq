@@ -50,10 +50,10 @@ func getChannelBalance(db *sqlx.DB, lndShortChannelId string, from time.Time, to
 				order by time)
 				UNION
 				(select creation_timestamp as time,
-					-(value_msat + fee_msat) as amt
+					-(select sum(a) from UNNEST(ARRAY(SELECT jsonb_array_elements_text(jsonb_path_query_array(htlcs, ('$.route[*].hops[0]?(@.chan_id=='|| (table lnd_short_channel_id)::text ||').amt_to_forward_msat')::jsonpath)))::numeric[]) as a) amt
 				from payment p
-				where status = 'SUCCEEDED'
-				and (htlcs->-1->'route'->'hops'->0->>'chan_id')::text = (table lnd_short_channel_id)::text
+				where (status = 'SUCCEEDED')
+					and jsonb_path_query_array(htlcs, ('$.route[*].hops[0].chan_id')::jsonpath) @> ((table lnd_short_channel_id)::text)::jsonb
 				order by time)
 				UNION
 				(select settle_date as time,

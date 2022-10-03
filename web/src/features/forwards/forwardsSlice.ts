@@ -259,9 +259,11 @@ export const forwardsSlice = createSlice({
     });
 
     builder.addMatcher(torqApi.endpoints.getTableViews.matchFulfilled, (state, { payload }) => {
-      state.views = payload.map((view: { id: number; view: ViewInterface }) => {
-        return { ...view.view, id: view.id };
-      });
+      if (payload !== null) {
+        state.views = payload.map((view: { id: number; view: ViewInterface }) => {
+          return { ...view.view, id: view.id };
+        });
+      }
     });
 
     builder.addMatcher(torqApi.endpoints.updateTableView.matchFulfilled, (state, { payload }) => {

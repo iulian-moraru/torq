@@ -1,0 +1,33 @@
+@use "/src/styles/typography.scss";
+
+.sectionTitleContainer {
+  display: grid;
+  grid-template-columns: 44px auto 44px;
+  grid-template-rows: 44px;
+  align-items: center;
+  gap: 4px;
+}
+.sectionTitleContainer {
+  border-bottom: 1px solid var(--content-subtle);
+  margin-bottom: 16px;
+}
+.sidebarSectionContent {
+  display: flex;
+  flex-direction: column;
+  row-gap: 12px;
+  margin-bottom: 16px;
+  height: 0px;
+  transition: height 200ms;
+  overflow: hidden;
+  transition-timing-function: cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+.expanded {
+  height: auto;
+  overflow: initial;
+}
+.sidebarIcon {
+  padding: 8px;
+  display: grid;
+  align-items: center;
+  justify-items: center;
+}

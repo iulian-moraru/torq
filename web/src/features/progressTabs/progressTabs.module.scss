@@ -1,0 +1,18 @@
+.progressTabsWrapper {
+  overflow-x: hidden;
+}
+.progressTabsContainer {
+  width: 476px;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 476px;
+  grid-column-gap: 48px;
+  will-change: transform;
+  transition: transform 200ms;
+}
+@media only screen and (max-width: 700px) {
+  .progressTabsContainer {
+    width: 100%;
+    grid-auto-columns: 100%;
+  }
+}

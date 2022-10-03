@@ -1,7 +1,10 @@
 .textInput {
+  border: 1px solid var(--fg-subtle);
   border-radius: var(--radius-default);
-  border-width: 1px;
-  border-color: var(--fg-subtle);
   width: 100%;
   padding: 10px;
+  outline: none !important;
+  &:focus {
+    border-color: var(--primary-500);
+  }
 }

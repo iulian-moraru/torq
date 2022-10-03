@@ -19,7 +19,7 @@
     &.connected {
       color: var(--secondary-2-600);
       background-color: var(--secondary-2-150);
-      border: 1px solid var(--secondary-2-500);
+      border: 1px solid var(--secondary-2-300);
     }
     &.disabled {
       color: var(--content-muted);
@@ -94,7 +94,7 @@
   .deleteConfirmButtons {
     display: flex;
     align-items: center;
-    justify-content: end;
+    justify-content: flex-end;
     button {
       margin-left: 30px;
     }

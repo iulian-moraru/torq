@@ -50,12 +50,6 @@ func processWsReq(db *sqlx.DB, c *gin.Context, wChan chan interface{}, req wsReq
 	}
 
 	switch req.Type {
-	case "auth":
-		wChan <- wsError{
-			ReqId: req.ReqId,
-			Type:  "Error",
-			Error: "You are already authenticated",
-		}
 	case "newPayment":
 		if req.NewPaymentRequest == nil {
 			wChan <- wsError{
@@ -121,8 +115,8 @@ func processWsReq(db *sqlx.DB, c *gin.Context, wChan chan interface{}, req wsReq
 	}
 }
 
-func WebsocketHandler(c *gin.Context, db *sqlx.DB, apiPwd string, wsChan chan interface{}) {
 
+func WebsocketHandler(c *gin.Context, db *sqlx.DB, wsChan chan interface{}) {
 	conn, err := wsUpgrade.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
 		server_errors.LogAndSendServerError(c, err)
@@ -141,9 +135,6 @@ func WebsocketHandler(c *gin.Context, db *sqlx.DB, apiPwd string, wsChan chan in
 		}
 	}(c)
 
-	// Boolean indicating whether the client is authenticated
-	allowedUser := false
-
 	for {
 		req := wsRequest{}
 		err := conn.ReadJSON(&req)
@@ -154,29 +145,6 @@ func WebsocketHandler(c *gin.Context, db *sqlx.DB, apiPwd string, wsChan chan in
 			server_errors.LogAndSendServerError(c, err)
 			return
 		case nil:
-			// Check if the client is authenticated
-			if allowedUser == false {
-				if req.Type != "auth" {
-					wsChan <- wsError{
-						ReqId: req.ReqId,
-						Type:  "Error",
-						Error: "Unauthorized. Please login first.",
-					}
-					continue
-				}
-				if *req.Password == apiPwd {
-					allowedUser = true
-					wsChan <- AuthSuccess{AuthSuccess: true}
-					continue
-				}
-				wsChan <- wsError{
-					ReqId: req.ReqId,
-					Type:  "Error",
-					Error: "Incorrect password",
-				}
-				continue
-			}
-
 			go processWsReq(db, c, wsChan, req)
 			continue
 		default:

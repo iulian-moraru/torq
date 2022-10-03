@@ -1,6 +1,6 @@
 import styles from "./table_controls.module.scss";
 import { Save20Regular as SaveIcon } from "@fluentui/react-icons";
-import Button, { buttonColor } from "../../buttons/Button";
+import Button, { buttonColor, buttonSize } from "../../buttons/Button";
 import { useAppSelector } from "../../../store/hooks";
 import { selectCurrentView, selectedViewIndex } from "../../forwards/forwardsSlice";
 import { useUpdateTableViewMutation, useCreateTableViewMutation } from "apiSlice";
@@ -28,6 +28,7 @@ function TableControls() {
           {!currentView.saved && (
             <Button
               buttonColor={buttonColor.ghost}
+              buttonSize={buttonSize.small}
               icon={<SaveIcon />}
               text={"Save"}
               onClick={saveView}

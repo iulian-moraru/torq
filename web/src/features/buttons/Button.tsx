@@ -11,10 +11,14 @@ export enum buttonColor {
 }
 
 export enum buttonPosition {
-  left,
-  right,
   center,
   fullWidth,
+}
+
+export enum buttonSize {
+  medium,
+  small,
+  large,
 }
 
 const buttonPositionClass = {
@@ -23,6 +27,7 @@ const buttonPositionClass = {
   2: styles.positionCenter,
   3: styles.positionFullWidth,
 };
+
 const buttonColorClass = {
   0: styles.primary,
   1: styles.secondary,
@@ -32,7 +37,13 @@ const buttonColorClass = {
   5: styles.subtle,
 };
 
-function Button(props: {
+const buttonSizeClass = {
+  0: styles.medium,
+  1: styles.small,
+  2: styles.large,
+};
+
+export default function Button(props: {
   text?: string;
   type?: string;
   icon?: any;
@@ -41,6 +52,7 @@ function Button(props: {
   isOpen?: boolean;
   buttonColor: buttonColor;
   buttonPosition?: buttonPosition;
+  buttonSize?: buttonSize;
   submit?: boolean;
   disabled?: boolean;
 }) {
@@ -57,6 +69,7 @@ function Button(props: {
         props.className,
         buttonColorClass[props.buttonColor],
         buttonPositionClass[props.buttonPosition || 0],
+        buttonSizeClass[props.buttonSize || 0],
         {
           [styles.open]: props.isOpen,
         }
@@ -70,4 +83,15 @@ function Button(props: {
   );
 }
 
-export default Button;
+export function ButtonWrapper(props: {
+  leftChildren?: Array<React.ReactNode> | React.ReactNode;
+  rightChildren?: Array<React.ReactNode> | React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={classNames(styles.buttonWrapper, props.className)}>
+      <div className={styles.leftButtonContainer}>{props.leftChildren}</div>
+      <div className={styles.rightButtonContainer}>{props.rightChildren}</div>
+    </div>
+  );
+}

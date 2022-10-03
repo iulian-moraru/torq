@@ -14,6 +14,7 @@ export interface ViewInterface {
 
 export interface initialStateProps {
   paymentViews: ViewInterface[];
+  // newPayments: Map<string, Array<NewPaymentResponse>>;
 }
 
 export const AllPaymentsColumns: Array<ColumnMetaData> = [
@@ -53,6 +54,7 @@ const initialState: initialStateProps = {
       columns: ActivePaymentsColumns,
     },
   ],
+  // newPayments: new Map<string, Array<NewPaymentResponse>>(),
 };
 
 export const paymentsSlice = createSlice({
@@ -65,6 +67,16 @@ export const paymentsSlice = createSlice({
     updateColumns: (state, actions: PayloadAction<{ columns: ColumnMetaData[] }>) => {
       state.paymentViews[0].columns = actions.payload.columns;
     },
+    // updateNewPaymentResponse: (state, actions: PayloadAction<{ reqId: string; payment: NewPaymentResponse }>) => {
+    //   const payment = actions.payload.payment;
+    //   const reqId = actions.payload.reqId;
+    //   const paymentArray = state.newPayments.get(reqId);
+    //   if (paymentArray) {
+    //     paymentArray.push(payment);
+    //   } else {
+    //     state.newPayments.set(reqId, [payment]);
+    //   }
+    // },
   },
 });
 
@@ -77,6 +89,10 @@ export const selectPaymentsFilters = (state: RootState) => {
 export const selectActiveColumns = (state: RootState) => {
   return state.payments.paymentViews[0].columns || [];
 };
+
+// export const selectNewPayments = (state: RootState) => {
+//   return state.payments.paymentViews[0].columns || [];
+// };
 
 export const selectAllColumns = (_: RootState) => AllPaymentsColumns;
 

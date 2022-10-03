@@ -65,29 +65,24 @@ func NewLoginRateLimitMiddleware() gin.HandlerFunc {
 	return mgin.NewMiddleware(limiter.New(store, rate), mgin.WithKeyGetter(loginKeyGetter))
 }
 
-func apiPasswordMiddleware(apiPswd string) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		c.Set("apiPswd", apiPswd)
-	}
-}
-
 var wsUpgrade = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
 	//check origin will check the cross region source
 	CheckOrigin: func(r *http.Request) bool {
 		origin := r.Header.Get("Origin")
-		return origin == "chrome-extension://cbcbkhdmedgianpaifchdaddpnmgnknn" || origin == "http://localhost:3000"
+		return origin == "http://localhost:3000"
 	},
 }
 
 func registerRoutes(r *gin.Engine, db *sqlx.DB, apiPwd string, wsChan chan interface{}, restartLNDSub func() error) {
 	r.Use(gzip.Gzip(gzip.DefaultCompression))
+	applyCors(r)
 	// Websocket
 	ws := r.Group("/ws")
-	ws.GET("", func(c *gin.Context) { WebsocketHandler(c, db, apiPwd, wsChan) })
+  ws.Use(auth.AuthRequired)
+	ws.GET("", func(c *gin.Context) { WebsocketHandler(c, db, wsChan) })
 
-	applyCors(r)
 	registerStaticRoutes(r)
 
 	api := r.Group("/api")

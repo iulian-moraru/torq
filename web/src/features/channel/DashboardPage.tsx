@@ -12,7 +12,7 @@ import { addDays, format } from "date-fns";
 import { useParams } from "react-router";
 import DetailsPageTemplate from "features/templates/detailsPageTemplate/DetailsPageTemplate";
 import { selectFlowKeys, selectProfitChartKey, updateFlowKey, updateProfitChartKey } from "./channelSlice";
-import { Link } from "react-router-dom";
+import { Link, Outlet } from "react-router-dom";
 
 const ft = d3.format(",.0f");
 
@@ -203,6 +203,7 @@ function ChannelPage() {
           </div>
         </div>
       </div>
+      <Outlet />
     </DetailsPageTemplate>
   );
 }

@@ -7,7 +7,7 @@ import {
   ColumnTriple20Regular as ColumnsIcon,
   Options20Regular as OptionsIcon,
 } from "@fluentui/react-icons";
-import Sidebar, { SidebarSection } from "features/sidebar/Sidebar";
+import Sidebar from "features/sidebar/Sidebar";
 import TablePageTemplate, {
   TableControlSection,
   TableControlsButton,
@@ -31,6 +31,7 @@ import {
 import { FilterCategoryType } from "../../sidebar/sections/filter/filter";
 import ColumnsSection from "../../sidebar/sections/columns/ColumnsSection";
 import clone from "../../../clone";
+import { SectionContainer } from "../../section/SectionContainer";
 
 type sections = {
   filter: boolean;
@@ -162,15 +163,15 @@ function OnChainPage() {
 
   const sidebar = (
     <Sidebar title={"Options"} closeSidebarHandler={closeSidebarHandler()}>
-      <SidebarSection
+      <SectionContainer
         title={"Columns"}
         icon={ColumnsIcon}
         expanded={activeSidebarSections.columns}
         handleToggle={sidebarSectionHandler("columns")}
       >
         <ColumnsSection columns={allColumns} activeColumns={activeColumns} handleUpdateColumn={updateColumnsHandler} />
-      </SidebarSection>
-      <SidebarSection
+      </SectionContainer>
+      <SectionContainer
         title={"Filter"}
         icon={FilterIcon}
         expanded={activeSidebarSections.filter}
@@ -182,15 +183,15 @@ function OnChainPage() {
           filterUpdateHandler={handleFilterUpdate}
           defaultFilter={defaultFilter}
         />
-      </SidebarSection>
-      <SidebarSection
+      </SectionContainer>
+      <SectionContainer
         title={"Sort"}
         icon={SortIcon}
         expanded={activeSidebarSections.sort}
         handleToggle={sidebarSectionHandler("sort")}
       >
         <SortSection columns={sortableColumns} orderBy={orderBy} updateHandler={handleSortUpdate} />
-      </SidebarSection>
+      </SectionContainer>
     </Sidebar>
   );
 

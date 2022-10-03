@@ -1,0 +1,138 @@
+.labelWrapper {
+  display: flex;
+  flex-direction: row;
+  align-items: end;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.destinationLabel {
+  display: block;
+  //color: var(--content-muted);
+  font-size: var(--font-size-small);
+  padding: 3px 0px 2px;
+}
+.destinationType {
+  color: var(--secondary-2-700);
+  font-size: var(--font-size-small);
+  background-color: var(--secondary-2-100);
+  border-radius: 11px;
+  padding: 3px 12px 2px;
+  &.unknownAddressType {
+    background-color: var(--color-baige-400);
+    color: var(--content-default);
+  }
+  &.errorDestination {
+    background-color: var(--color-red-300);
+    color: var(--color-red-700);
+  }
+}
+.destinationTextArea {
+  border-radius: var(--radius-default);
+  border-width: 1px;
+  border-color: var(--fg-subtle);
+  width: 100%;
+  padding: 10px;
+  overflow: hidden;
+  margin-bottom: 24px;
+  outline: none !important;
+  &:focus {
+    border-color: var(--primary-500);
+  }
+}
+.amountWrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
+.amount {
+  font-size: 40px;
+  text-align: center;
+  margin: 0px auto 8px;
+}
+.amountInput {
+  display: inline;
+  width: 100%;
+  text-align: center;
+  font-size: 40px;
+  margin: 8px auto 8px;
+  //padding: 8px 10px 8px;
+  border: solid 1px var(--content-subtle);
+  &:focus {
+    outline: none;
+    border-color: var(--primary-200);
+  }
+}
+.label {
+  color: var(--content-muted);
+  font-size: var(--font-size-small);
+  font-weight: 500;
+}
+.destination {
+  //margin-top: 16px;
+  //margin-bottom: 8px;
+}
+.destinationPreview {
+  margin-top: 4px;
+  margin-bottom: 8px;
+  word-break: break-all;
+  max-width: calc(100% - 32px);
+  text-align: center;
+  height: 1.5em;
+  text-overflow: ellipsis;
+  //overflow: hidden;
+}
+.customButtonWrapperStyles {
+  margin-top: 24px;
+  margin-bottom: 16px;
+}
+.paymentResultIconWrapper {
+  padding: 8px;
+  width: min-content;
+  border-radius: 100%;
+  margin: 12px auto;
+  svg {
+    font-size: 124px;
+  }
+}
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.inFlight {
+  color: var(--color-baige-700);
+  background-color: var(--color-baige-300);
+  svg {
+    font-size: 124px;
+    animation: rotate 1s infinite linear 0s;
+  }
+}
+.success {
+  background-color: var(--secondary-2-100);
+  color: var(--secondary-2-600);
+}
+.failed {
+  background-color: var(--color-red-300);
+  color: var(--color-red-500);
+}
+.paymentStatusMessage {
+  font-size: var(--font-size-M);
+  text-align: center;
+  padding-top: 16px;
+  padding-bottom: 16px;
+}
+//.successfulPaymentIcon {
+//  font-size: 124px;
+//  color: var(--secondary-2-600);
+//}
+//.failedPaymentIcon {
+//  font-size: 124px;
+//  color: var(--color-red-500);
+//}

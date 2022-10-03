@@ -8,75 +8,6 @@ import (
 	"time"
 )
 
-//{
-//  "reqId": "something",
-//  "type": "newPayment",
-//  "status": "SUCCEEDED",
-//  "hash": "4552e8bd1a8c5d0fe490c33a15a5a6946912d3c50fafc2106549f702965f6d8c",
-//  "preimage": "fee347b7a00b3247b48312b0a16ad4ab46de2ba30bb61269caeff43c0798e87e",
-//  "paymentRequest": "",
-//  "amountMsat": 1000,
-//  "creationDate": "2022-08-23T11:33:44.365328469+02:00",
-//  "path": {
-//    "AttemptId": 259230,
-//    "Status": "SUCCEEDED",
-//    "Route": {
-//      "TotalTimeLock": 750762,
-//      "Hops": [
-//        {
-//          "ChanId": "708152x2971x1",
-//          "Expiry": 750762,
-//          "AmtToForwardMsat": 1000,
-//          "PubKey": "035e4ff418fc8b5554c5d9eea66396c227bd429a3251c8cbc711002ba215bfc226",
-//          "MppRecord": {
-//            "PaymentAddr": "51b48e61abb0e59ba790ef90b1d1bc8734a93d5db35906cb837f497a2db99e09",
-//            "TotalAmtMsat": 1000
-//          }
-//        }
-//      ],
-//      "TotalAmtMsat": 1000
-//    },
-//    "AttemptTimeNs": "2022-08-23T11:33:44.465361286+02:00",
-//    "ResolveTimeNs": "2022-08-23T11:33:46.766148987+02:00",
-//    "Preimage": "fee347b7a00b3247b48312b0a16ad4ab46de2ba30bb61269caeff43c0798e87e"
-//  }
-//}
-//
-//
-//{
-//  "reqId": "something",
-//  "type": "newPayment",
-//  "status": "IN_FLIGHT",
-//  "hash": "4552e8bd1a8c5d0fe490c33a15a5a6946912d3c50fafc2106549f702965f6d8c",
-//  "preimage": "0000000000000000000000000000000000000000000000000000000000000000",
-//  "paymentRequest": "",
-//  "amountMsat": 1000,
-//  "creationDate": "2022-08-23T11:33:44.365328469+02:00",
-//  "path": {
-//    "AttemptId": 259230,
-//    "Status": "IN_FLIGHT",
-//    "Route": {
-//      "TotalTimeLock": 750762,
-//      "Hops": [
-//        {
-//          "ChanId": "708152x2971x1",
-//          "Expiry": 750762,
-//          "AmtToForwardMsat": 1000,
-//          "PubKey": "035e4ff418fc8b5554c5d9eea66396c227bd429a3251c8cbc711002ba215bfc226",
-//          "MppRecord": {
-//            "PaymentAddr": "51b48e61abb0e59ba790ef90b1d1bc8734a93d5db35906cb837f497a2db99e09",
-//            "TotalAmtMsat": 1000
-//          }
-//        }
-//      ],
-//      "TotalAmtMsat": 1000
-//    },
-//    "AttemptTimeNs": "2022-08-23T11:33:44.465361286+02:00",
-//    "ResolveTimeNs": "1970-01-01T01:00:00+01:00",
-//    "Preimage": ""
-//  }
-//}
-
 func Test_processResponse(t *testing.T) {
 	type args struct {
 		response []byte
@@ -129,12 +60,13 @@ func Test_processResponse(t *testing.T) {
 				},
 			},
 			PaymentIndex:  234,
-			FailureReason: 0,
+			FailureReason: lnrpc.PaymentFailureReason_FAILURE_REASON_NONE,
 		},
 		want: NewPaymentResponse{
 			ReqId:          "Unique ID here",
 			Type:           "newPayment",
 			Status:         "SUCCEEDED",
+			FailureReason:  "FAILURE_REASON_NONE",
 			Hash:           "4552e8bd1a8c5d0fe490c33a15a5a6946912d3c50fafc2106549f702965f6d8c",
 			Preimage:       "fee347b7a00b3247b48312b0a16ad4ab46de2ba30bb61269caeff43c0798e87e",
 			PaymentRequest: "",
@@ -218,6 +150,7 @@ func Test_processResponse(t *testing.T) {
 				ReqId:          "Unique ID here",
 				Type:           "newPayment",
 				Status:         "FAILED",
+				FailureReason:  "FAILURE_REASON_NONE",
 				Hash:           "4552e8bd1a8c5d0fe490c33a15a5a6946912d3c50fafc2106549f702965f6d8c",
 				Preimage:       "00000",
 				PaymentRequest: "",
@@ -268,8 +201,9 @@ func Test_processResponse(t *testing.T) {
 
 func Test_newSendPaymentRequest(t *testing.T) {
 	var amount int64 = 2000
-	var allowSelfPayment bool = true
+	var allowSelfPayment = true
 	var feeLimitMsat int64 = 100
+	var destination = "abcd"
 	tests := []struct {
 		name  string
 		reqId string
@@ -279,7 +213,7 @@ func Test_newSendPaymentRequest(t *testing.T) {
 		{
 			name: "with allow self and fee limit",
 			input: NewPaymentRequest{
-				Invoice:          "abcd",
+				Invoice:          &destination,
 				TimeOutSecs:      3600,
 				Dest:             nil,
 				AmtMSat:          &amount,
@@ -288,7 +222,7 @@ func Test_newSendPaymentRequest(t *testing.T) {
 			},
 			want: routerrpc.SendPaymentRequest{
 				AmtMsat:          amount,
-				PaymentRequest:   "abcd",
+				PaymentRequest:   destination,
 				TimeoutSeconds:   3600,
 				CltvLimit:        0,
 				AllowSelfPayment: allowSelfPayment,
@@ -298,18 +232,21 @@ func Test_newSendPaymentRequest(t *testing.T) {
 		{
 			name: "with out any optional params",
 			input: NewPaymentRequest{
-				Invoice:     "bcde",
+				Invoice:     &destination,
 				TimeOutSecs: 3600,
 			},
 			want: routerrpc.SendPaymentRequest{
-				PaymentRequest: "bcde",
+				PaymentRequest: destination,
 				TimeoutSeconds: 3600,
 			},
 		},
 	}
 	for i, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			got := newSendPaymentRequest(test.input)
+			got, err := newSendPaymentRequest(test.input)
+			if err != nil {
+				t.Errorf("%d: newSendPaymentRequest() error = %v", i, err)
+			}
 			if !reflect.DeepEqual(got, test.want) {
 				t.Errorf("%d: newSendPaymentRequest()\nGot:\n%v\nWant:\n%v\n", i, got, test.want)
 			}

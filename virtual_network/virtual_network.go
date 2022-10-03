@@ -6,6 +6,10 @@ import (
 	"github.com/cockroachdb/errors"
 	"github.com/docker/docker/client"
 	"log"
+	"math/rand"
+	"strconv"
+	"strings"
+	"time"
 )
 
 func createDockerEnvironment(name string, createDatabase bool) (de DockerDevEnvironment, err error) {
@@ -163,7 +167,7 @@ func StartVirtualNetwork(name string, withDatabase bool) error {
 		log.Fatal(err)
 	}
 
-	log.Println("Get Bob's pubkey")
+	log.Println("Get Bob's IP")
 	bobInspection, err := de.Client.ContainerInspect(ctx, bobConf.Instance.ID)
 	if err != nil {
 		return errors.Newf("Getting Bob's IP Address: %v", err)
@@ -287,7 +291,7 @@ func PurgeVirtualNetwork(name string, withDatabase bool) error {
 }
 
 // CreateNewVirtualNetwork creates a new virtual network with the given name,
-//this is used for creating the development Lightning network and database.
+// this is used for creating the development Lightning network and database.
 func CreateNewVirtualNetwork(name string, createDatabase bool, purge bool) error {
 
 	torqDbName := name + "-torq-db"
@@ -374,7 +378,6 @@ func CreateNewVirtualNetwork(name string, createDatabase bool, purge bool) error
 	//stdcopy.StdCopy(os.Stdout, os.Stderr, out)
 
 	log.Println("Creating new mining address on Alice")
-
 	aliceAddress, err := GetNewAddress(ctx, de.Client, aliceConf.Instance)
 	if err != nil {
 		return errors.Newf("Getting alice mining address: %v", err)
@@ -420,6 +423,12 @@ func CreateNewVirtualNetwork(name string, createDatabase bool, purge bool) error
 	}
 	log.Println("Segwit is active")
 
+	aliceInitBalance, err := GetOnchainBalance(ctx, de.Client, aliceConf.Instance)
+	if err != nil {
+		return errors.Newf("Getting Bob's balance: %v", err)
+	}
+	log.Printf("Alice's initial onchain balance: %s\n", aliceInitBalance)
+
 	// Starting carol
 	log.Println("Starting Carol")
 	err = de.InitContainer(ctx, carolConf)
@@ -427,12 +436,109 @@ func CreateNewVirtualNetwork(name string, createDatabase bool, purge bool) error
 		log.Fatal(err)
 	}
 
-	// start Bob and Carol AFTER btcd has restarted
+	log.Println("Creating new mining address on Carol")
+	carolAddress, err := GetNewAddress(ctx, de.Client, carolConf.Instance)
+	if err != nil {
+		return errors.Newf("Getting Carol mining address: %v", err)
+	}
+	log.Println("Carol receive address created")
+	log.Println(carolAddress)
+
+	log.Println("Shutting Carol down before btcd restart")
+	de.FindAndRemoveContainer(ctx, carolConf.Name)
+
+	log.Println("Recreating btcd container with Carol's mining address")
+	de.FindAndRemoveContainer(ctx, btcdConf.Name)
+
+	log.Println("Starting new btcd container")
+	// Update the container config with the minind addres instead of adding a new one
+	btcdConf.Env = []string{"NETWORK=simnet", "MINING_ADDRESS=" + carolAddress}
+	err = de.InitContainer(ctx, btcdConf)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	log.Println("Generate 400 blocks (we need at least \"100 >=\" blocks because of coinbase block maturity and \"300 ~=\" in order to activate segwit)")
+	err = MineBlocks(ctx, de.Client, btcdConf.Instance, 400)
+	if err != nil {
+		return errors.Newf("Mining blocks: %v", err)
+	}
+	log.Println("Blocks mined")
+
+	// Starting carol
+	log.Println("Recreating Carol now that btcd is back online")
+	err = de.InitContainer(ctx, carolConf)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	log.Println("Checking that segwit is active")
+	err = SegWitActive(ctx, de.Client, btcdConf.Instance)
+	if err != nil {
+		return errors.Newf("btcd checking segwit is active: %v", err)
+	}
+	log.Println("Segwit is active")
+
+	carolInitBalance, err := GetOnchainBalance(ctx, de.Client, carolConf.Instance)
+	if err != nil {
+		return errors.Newf("Getting Bob's balance: %v", err)
+	}
+	log.Printf("Carol's initial onchain balance: %s\n", carolInitBalance)
+
+	// Start Bob
 	log.Println("Starting Bob")
 	err = de.InitContainer(ctx, bobConf)
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	log.Println("Creating new mining address on Carol")
+	bobAddress, err := GetNewAddress(ctx, de.Client, bobConf.Instance)
+	if err != nil {
+		return errors.Newf("Getting Bob mining address: %v", err)
+	}
+	log.Println("Bob receive address created")
+	log.Println(bobAddress)
+
+	log.Println("Shutting Bob down before btcd restart")
+	de.FindAndRemoveContainer(ctx, bobConf.Name)
+
+	log.Println("Recreating btcd container with Bob's mining address")
+	de.FindAndRemoveContainer(ctx, btcdConf.Name)
+
+	log.Println("Starting new btcd container")
+	// Update the container config with the minind addres instead of adding a new one
+	btcdConf.Env = []string{"NETWORK=simnet", "MINING_ADDRESS=" + bobAddress}
+	err = de.InitContainer(ctx, btcdConf)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	log.Println("Generate 400 blocks (we need at least \"100 >=\" blocks because of coinbase block maturity and \"300 ~=\" in order to activate segwit)")
+	err = MineBlocks(ctx, de.Client, btcdConf.Instance, 400)
+	if err != nil {
+		return errors.Newf("Mining blocks: %v", err)
+	}
+	log.Println("Blocks mined")
+
+	log.Println("Recreating Bob now that btcd is back online")
+	err = de.InitContainer(ctx, bobConf)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	bobInitBalance, err := GetOnchainBalance(ctx, de.Client, bobConf.Instance)
+	if err != nil {
+		return errors.Newf("Getting Bob's balance: %v", err)
+	}
+	log.Printf("Bob's initial onchain balance: %s\n", bobInitBalance)
+
+	log.Println("Checking that segwit is active")
+	err = SegWitActive(ctx, de.Client, btcdConf.Instance)
+	if err != nil {
+		return errors.Newf("btcd checking segwit is active: %v", err)
+	}
+	log.Println("Segwit is active")
 
 	log.Println("Get Bob's pubkey")
 	bobInspection, err := de.Client.ContainerInspect(ctx, bobConf.Instance.ID)
@@ -651,8 +757,483 @@ func PrintInstructions() {
 		"bob() { docker exec -it  dev-bob /bin/bash -c \"lncli --macaroonpath=\"/root/." +
 		"lnd/data/chain/bitcoin/simnet/admin.macaroon\" --network=simnet $@\"}; \n" +
 		"carol() { docker exec -it  dev-carol /bin/bash -c \"lncli --macaroonpath=\"/root/." +
-		"lnd/data/chain/bitcoin/simnet/admin.macaroon\" --network=simnet $@\"};" +
+		"lnd/data/chain/bitcoin/simnet/admin.macaroon\" --network=simnet $@\"}; \n" +
 		"vbtcd() { docker exec -it  dev-btcd /bin/bash -c \"btcctl --simnet --rpcuser=devuser --rpcpass=devpass" +
 		" --rpccert=/rpc/rpc.cert --rpcserver=localhost $@\"};")
 
+}
+
+// NodeFLowLoop
+// Run a loop that
+// - creates and pays invoices to/from random nodes at a user defined interval
+// - creates addresses and sends coins from/to random nodes at a user defined interval
+// - opens a channel between random nodes at user defined interval -no more than 2 duplicate channels
+// - closes channels randomly
+// invfrq flag = invoice creation frequency - default to 1 time per second
+// sendcoins flag = create address and sencoins frequency - default to 1 time per 30 seconds
+// openChan flag = open channel frequency - default to 1 time per 10 minutes
+func NodeFLowLoop(name string, invfrq int, scofrq int, ochfrq int) error {
+	log.Printf("inv freq: %v\n", invfrq)
+	log.Printf("send coins freq: %v\n", scofrq)
+	log.Printf("ochfreq freq: %v\n", ochfrq)
+
+	torqDbName := name + "-torq-db"
+	btcdName := name + "-btcd"
+	aliceName := name + "-alice"
+	bobName := name + "-bob"
+	carolName := name + "-carol"
+
+	de, err := createDockerEnvironment(name, true)
+	if err != nil {
+		return err
+	}
+
+	torqDbConf := de.Containers[torqDbName]
+	btcdConf := de.Containers[btcdName]
+	aliceConf := de.Containers[aliceName]
+	bobConf := de.Containers[bobName]
+	carolConf := de.Containers[carolName]
+
+	ctx := context.Background()
+
+	err = de.StartContainer(ctx, torqDbConf)
+	if err != nil {
+		return err
+	}
+
+	log.Println("Starting btcd")
+	err = de.StartContainer(ctx, btcdConf)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	/*
+		// Start alice
+	*/
+	log.Println("Starting Alice")
+	err = de.StartContainer(ctx, aliceConf)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	log.Println("Get Alice's IP")
+	log.Println(aliceConf.Instance)
+	aliceInspection, err := de.Client.ContainerInspect(ctx, aliceConf.Instance.ID)
+	if err != nil {
+		return errors.Newf("Getting Alice's IP Address: %v", err)
+	}
+	log.Println(aliceInspection.NetworkSettings.Networks)
+
+	aliceIPAddress := aliceInspection.NetworkSettings.Networks[name].IPAddress
+	log.Println("Alice's IP address is:")
+	log.Println(aliceIPAddress)
+
+	log.Println("Getting Alice's pubkey")
+	alicePubkey, err := GetPubKey(ctx, de.Client, aliceConf.Instance)
+	if err != nil {
+		return errors.Newf("Getting Alice's pubkey: %v", err)
+	}
+	log.Printf("Alice's pubkey: %s\n", alicePubkey)
+
+	aliceWalletBalance, err := GetOnchainBalance(ctx, de.Client, aliceConf.Instance)
+	if err != nil {
+
+		return errors.Newf("Checking Carol's balance: %v", err)
+		//continue
+	}
+	log.Printf("Alice wallet balance: %v", aliceWalletBalance)
+
+	/*
+		// Start bob
+	*/
+	log.Println("Starting Bob")
+	err = de.StartContainer(ctx, bobConf)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	log.Println("Get Bob's IP")
+	bobInspection, err := de.Client.ContainerInspect(ctx, bobConf.Instance.ID)
+	if err != nil {
+		return errors.Newf("Getting Bob's IP Address: %v", err)
+	}
+	bobIPAddress := bobInspection.NetworkSettings.Networks[name].IPAddress
+	log.Println("Bob's IP address is:")
+	log.Println(bobIPAddress)
+
+	log.Println("Getting Bob's pubkey")
+	bobPubkey, err := GetPubKey(ctx, de.Client, bobConf.Instance)
+	if err != nil {
+		return errors.Newf("Getting Bob's pubkey: %v", err)
+	}
+	log.Printf("Bob's pubkey: %s\n", bobPubkey)
+
+	bobWalletBalance, err := GetOnchainBalance(ctx, de.Client, bobConf.Instance)
+	if err != nil {
+
+		return errors.Newf("Checking Carol's balance: %v", err)
+		//continue
+	}
+	log.Printf("Bob wallet balance: %v", bobWalletBalance)
+
+	/*
+		// Start Carol
+	*/
+	log.Println("Starting Carol")
+	err = de.StartContainer(ctx, carolConf)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	carolInspection, err := de.Client.ContainerInspect(ctx, carolConf.Instance.ID)
+	if err != nil {
+		return errors.Newf("Getting Carol's IP Address: %v", err)
+	}
+	carolIPAddress := carolInspection.NetworkSettings.Networks[name].IPAddress
+	log.Println("Carol's IP address is:")
+	log.Println(carolIPAddress)
+
+	log.Println("Getting Carol's pubkey")
+	carolPubkey, err := GetPubKey(ctx, de.Client, carolConf.Instance)
+	if err != nil {
+		return errors.Newf("Getting Carol's pubkey: %v", err)
+	}
+	log.Printf("Carol's pubkey: %s\n", carolPubkey)
+
+	carolWalletBalance, err := GetOnchainBalance(ctx, de.Client, carolConf.Instance)
+	if err != nil {
+
+		return errors.Newf("Checking Carol's balance: %v", err)
+		//continue
+	}
+	log.Printf("Carol wallet balance: %v", carolWalletBalance)
+
+	/*
+	 Connecting Bob and Alice
+	*/
+
+	log.Println("Connecting Alice to Bob")
+
+	err = ConnectPeer(ctx, de.Client, bobConf.Instance, alicePubkey, aliceIPAddress)
+	if err != nil {
+		return errors.Newf("Connecting Alice to Bob: %v", err)
+	}
+
+	log.Println("Verifing Alice is a peer of Bob")
+
+	alicePeerExists, err := CheckPeerExists(ctx, de.Client, bobConf.Instance, alicePubkey)
+	if err != nil || !alicePeerExists {
+		return errors.Newf("Checking that Alice is a peer of Bob: %v", err)
+	}
+
+	err = MineBlocks(ctx, de.Client, btcdConf.Instance, 30)
+	if err != nil {
+		return errors.Newf("Mining blocks: %v\n", err)
+	}
+
+	/*
+	 Connecting Bob and Carol
+	*/
+
+	log.Println("Connecting Carol to Bob")
+
+	err = ConnectPeer(ctx, de.Client, bobConf.Instance, carolPubkey, carolIPAddress)
+	if err != nil {
+		return errors.Newf("Connecting Carol to Bob: %v", err)
+	}
+
+	log.Println("Verifing Carol is a peer of Bob")
+
+	carolPeerExists, err := CheckPeerExists(ctx, de.Client, bobConf.Instance, carolPubkey)
+	if err != nil || !carolPeerExists {
+		return errors.Newf("Checking that Carol is a peer of Bob: %v", err)
+	}
+
+	err = MineBlocks(ctx, de.Client, btcdConf.Instance, 30)
+	if err != nil {
+		return errors.Newf("Mining blocks: %v\n", err)
+	}
+
+	/*
+	 Connecting Alice and Carol
+	*/
+
+	log.Println("Connecting Carol to Bob")
+
+	err = ConnectPeer(ctx, de.Client, aliceConf.Instance, carolPubkey, carolIPAddress)
+	if err != nil {
+		return errors.Newf("Connecting Carol to Bob: %v", err)
+	}
+
+	log.Println("Verifing Carol is a peer of Bob")
+
+	carolPeerAliceExists, err := CheckPeerExists(ctx, de.Client, aliceConf.Instance, carolPubkey)
+	if err != nil || !carolPeerAliceExists {
+		return errors.Newf("Checking that Carol is a peer of Bob: %v", err)
+	}
+
+	err = MineBlocks(ctx, de.Client, btcdConf.Instance, 30)
+	if err != nil {
+		return errors.Newf("Mining blocks: %v\n", err)
+	}
+
+	WriteConnectionDetails(ctx, de.Client, bobName, bobIPAddress)
+
+	//go openRandomChann(name, ochfrq, ctx, de, alicePubkey, bobPubkey, carolPubkey)
+	//go closeRandomChann(name, ochfrq, ctx, de, alicePubkey, bobPubkey, carolPubkey)
+	go createPayInvoice(name, invfrq, ctx, de, alicePubkey, bobPubkey, carolPubkey)
+	//go addressSendCoins(name, scofrq, ctx, de, alicePubkey, bobPubkey, carolPubkey)
+	select {}
+	return nil
+}
+
+func openRandomChann(name string, ochfrq int, ctx context.Context, de DockerDevEnvironment, alicePK string, bobPK string, carolPK string) {
+	log.Println("Opening random channel")
+	freq := time.Duration(ochfrq)
+	ticker := time.NewTicker(freq * time.Minute)
+
+	btcdName := name + "-btcd"
+	btcdConf := de.Containers[btcdName]
+
+	var cnt int
+	for range ticker.C {
+		cnt++
+		peer1, peer2PK, peer2 := pickRandomNodes(de, name, alicePK, bobPK, carolPK)
+
+		log.Printf("%v opening channel to %v\n", peer1.Name, peer2.Name)
+
+		channels, err := ListNodeChannels(ctx, de.Client, peer1.Instance, peer2PK)
+		if err != nil {
+			continue
+		}
+
+		if len(channels) >= 2 {
+			log.Println("There are already 2 active channels.Skipping!")
+			continue
+		}
+
+		var min int
+		var max int
+		var size string
+
+		rand.Seed(time.Now().UnixNano())
+		if cnt == 4 {
+			min = 40000000
+			max = 100000000
+			size = strconv.Itoa(rand.Intn(max-min) + min)
+			cnt = 0
+		} else {
+			min = 500000
+			max = 15000000
+			size = strconv.Itoa(rand.Intn(max-min) + min)
+		}
+
+		_, err = CreateChannel(ctx, de.Client, peer1.Instance, peer2PK, size, btcdConf.Instance)
+		if err != nil {
+			continue
+		}
+		log.Println("Channel size: ", size)
+	}
+}
+
+func closeRandomChann(name string, ochfrq int, ctx context.Context, de DockerDevEnvironment, alicePK string, bobPK string, carolPK string) {
+	freq := time.Duration(ochfrq)
+	ticker := time.NewTicker(freq * time.Minute)
+
+	btcdName := name + "-btcd"
+	btcdConf := de.Containers[btcdName]
+
+	for range ticker.C {
+		log.Println("Closing random channel")
+		peer1, peer2PK, peer2 := pickRandomNodes(de, name, alicePK, bobPK, carolPK)
+
+		log.Printf("%v closing channel to %v\n", peer1.Name, peer2.Name)
+
+		channels, err := ListNodeChannels(ctx, de.Client, peer1.Instance, peer2PK)
+		if err != nil {
+			continue
+		}
+
+		if len(channels) == 0 {
+			log.Println("0 active channels. Skipping!")
+			continue
+		}
+
+		rand.Seed(time.Now().UnixNano())
+		randomIndex := rand.Intn(len(channels))
+		channelPoint := channels[randomIndex]
+
+		closeTxid, err := CloseChannel(ctx, de.Client, peer1.Instance, channelPoint)
+		//err = CreateChannel(ctx, de.Client, peer1.Instance, peer2, amt, btcdConf.Instance)
+		if err != nil {
+			continue
+		}
+		log.Println("Channel closed. Txid: ", closeTxid)
+		err = MineBlocks(ctx, de.Client, btcdConf.Instance, 1)
+		if err != nil {
+			continue
+		}
+
+		log.Println("Blocks mined")
+	}
+}
+
+func createPayInvoice(name string, invfrq int, ctx context.Context, de DockerDevEnvironment, alicePK string, bobPK string, carolPK string) {
+	freq := time.Duration(invfrq)
+	ticker := time.NewTicker(freq * time.Second)
+
+	btcdName := name + "-btcd"
+	btcdConf := de.Containers[btcdName]
+
+	for range ticker.C {
+		log.Println("Create new invoice and pay this invoice")
+		peer1, _, peer2 := pickRandomNodes(de, name, alicePK, bobPK, carolPK)
+
+		rand.Seed(time.Now().UnixNano())
+		min := 1
+		max := 1000000
+		amt := strconv.Itoa(rand.Intn(max-min) + min)
+
+		newInvoice, err := GenerateInvoice(ctx, de.Client, peer1.Instance, amt)
+		if err != nil {
+			//return errors.Newf("Creating Carol invoice: %v", err)
+			continue
+		}
+
+		log.Printf("%v generated new invoice: %s\n", peer1.Name, newInvoice)
+		//log.Printf("Encoded payment request: %s\n", newInvoice)
+
+		err = MineBlocks(ctx, de.Client, btcdConf.Instance, 6)
+		if err != nil {
+			continue
+		}
+		log.Println("Blocks mined")
+
+		log.Printf("%v paying invoice to %v", peer2.Name, peer1.Name)
+		err = PayInvoice(ctx, de.Client, peer2.Instance, newInvoice)
+		if err != nil {
+			log.Println("Sending payment: %v", err)
+			continue
+		}
+		err = MineBlocks(ctx, de.Client, btcdConf.Instance, 6)
+		if err != nil {
+			continue
+		}
+		log.Println("Blocks mined")
+
+		log.Printf("Checking payment received by %v", peer1.Name)
+		peer1ChannelBalance, err := GetChannelBalance(ctx, de.Client, peer1.Instance)
+		if err != nil {
+			//return errors.Newf("Checking Carol's balance: %v", err)
+			continue
+		}
+
+		log.Printf("Payment received by %v", peer1.Name)
+		log.Printf("%v's channel balance: %s\n", peer1.Name, peer1ChannelBalance)
+	}
+}
+
+func addressSendCoins(name string, scofrq int, ctx context.Context, de DockerDevEnvironment, alicePK string, bobPK string, carolPK string) {
+	freq := time.Duration(scofrq)
+	ticker := time.NewTicker(freq * time.Second)
+
+	btcdName := name + "-btcd"
+	btcdConf := de.Containers[btcdName]
+
+	for range ticker.C {
+		log.Println("Creating new address and sending coins to this address")
+		peer1, _, peer2 := pickRandomNodes(de, name, alicePK, bobPK, carolPK)
+		log.Println("Creating new mining address on", peer1.Name)
+
+		log.Println("Getting on-chain balance for:", peer1.Name)
+		peer1OnChainBal, err := GetOnchainBalance(ctx, de.Client, peer1.Instance)
+		if err != nil {
+			log.Println("Err getting before on-chain balance")
+		}
+		log.Printf("Before on-chain balance of %v: %s", peer1.Name, peer1OnChainBal)
+
+		peer1NewAddr, err := GetNewAddress(ctx, de.Client, peer1.Instance)
+		if err != nil {
+			log.Println("Error creating new addres for ", peer1.Name, ". Skipping")
+			continue
+		}
+
+		rand.Seed(time.Now().UnixNano())
+		min := 200000
+		max := 100000000
+		amt := strconv.Itoa(rand.Intn(max-min) + min)
+
+		log.Printf("%v sending %s on-chain to %v\n", peer2.Name, amt, peer1.Name)
+		txId, err := AddressSendCoins(ctx, de.Client, peer2.Instance, peer1NewAddr, amt)
+		if err != nil {
+			log.Println("Payment failed")
+			continue
+		}
+
+		err = MineBlocks(ctx, de.Client, btcdConf.Instance, 6)
+		if err != nil {
+			continue
+		}
+		log.Println("Blocks mined")
+
+		peer1OnChainBal, err = GetOnchainBalance(ctx, de.Client, peer1.Instance)
+		if err != nil {
+			log.Println("Err getting after on-chain balance")
+		}
+
+		log.Println("Coins sent. TxId: ", txId)
+		log.Printf("After on-chain balance of %v: %s", peer1.Name, peer1OnChainBal)
+	}
+
+}
+
+func pickRandomNodes(de DockerDevEnvironment, name string, alicePK string, bobPK string, carolPK string) (peer1 *ContainerConfig, peer2PK string, peer2 *ContainerConfig) {
+	//1 = alice
+	//2 = bob
+	//3 = carol
+	nodeCombo := []string{"1-2", "1-3", "2-3", "2-1", "3-1", "3-2"}
+	rand.Seed(time.Now().UnixNano())
+	randomIndex := rand.Intn(len(nodeCombo))
+	pick := nodeCombo[randomIndex]
+
+	combo := strings.Split(pick, "-")
+	val1 := combo[0]
+	val2 := combo[1]
+
+	aliceName := name + "-alice"
+	bobName := name + "-bob"
+	carolName := name + "-carol"
+
+	aliceConf := de.Containers[aliceName]
+	bobConf := de.Containers[bobName]
+	carolConf := de.Containers[carolName]
+
+	switch {
+	case val1 == "1" && val2 == "2":
+		peer1 = aliceConf
+		peer2PK = bobPK
+		peer2 = bobConf
+	case val1 == "1" && val2 == "3":
+		peer1 = aliceConf
+		peer2PK = carolPK
+		peer2 = carolConf
+	case val1 == "2" && val2 == "3":
+		peer1 = bobConf
+		peer2PK = carolPK
+		peer2 = carolConf
+	case val1 == "2" && val2 == "1":
+		peer1 = bobConf
+		peer2PK = alicePK
+		peer2 = aliceConf
+	case val1 == "3" && val2 == "1":
+		peer1 = carolConf
+		peer2PK = alicePK
+		peer2 = aliceConf
+	case val1 == "3" && val2 == "2":
+		peer1 = carolConf
+		peer2PK = bobPK
+		peer2 = bobConf
+	}
+
+	return peer1, peer2PK, peer2
 }

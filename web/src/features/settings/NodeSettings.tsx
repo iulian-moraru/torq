@@ -170,7 +170,7 @@ const NodeSettings = React.forwardRef(function NodeSettings(
   };
 
   const handleDeleteConfirmationTextInputChange = (value: string) => {
-    setDeleteConfirmationTextInputState(value);
+    setDeleteConfirmationTextInputState(value as string);
     setDeleteEnabled(value.toLowerCase() === "delete");
   };
 
@@ -223,7 +223,6 @@ const NodeSettings = React.forwardRef(function NodeSettings(
                           text={localState.disabled ? "Enable node" : "Disable node"}
                           icon={localState.disabled ? <PlayIcon /> : <PauseIcon />}
                           onClick={handleDisableClick}
-                          buttonPosition={buttonPosition.left}
                           disabled={!enableEnableButtonState}
                         />
                         <Button
@@ -231,7 +230,6 @@ const NodeSettings = React.forwardRef(function NodeSettings(
                           text={"Delete node"}
                           icon={<DeleteIcon />}
                           onClick={handleDeleteClick}
-                          buttonPosition={buttonPosition.left}
                         />
                       </div>
                     </Popover>
@@ -253,7 +251,7 @@ const NodeSettings = React.forwardRef(function NodeSettings(
                   <TextInput
                     label="GRPC Address (IP or Tor)"
                     value={localState.grpcAddress}
-                    onChange={handleAddressChange}
+                    onChange={(e) => handleAddressChange(e as string)}
                     placeholder="100.100.100.100:10009"
                   />
                 </span>
@@ -294,7 +292,10 @@ const NodeSettings = React.forwardRef(function NodeSettings(
               This operation cannot be undone, type &quot;<span className={styles.red}>delete</span>&quot; to confirm.
             </p>
 
-            <TextInput value={deleteConfirmationTextInputState} onChange={handleDeleteConfirmationTextInputChange} />
+            <TextInput
+              value={deleteConfirmationTextInputState}
+              onChange={(e) => handleDeleteConfirmationTextInputChange(e as string)}
+            />
             <div className={styles.deleteConfirmButtons}>
               <Button
                 buttonColor={buttonColor.warning}

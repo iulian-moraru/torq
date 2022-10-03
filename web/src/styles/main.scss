@@ -1,11 +1,4 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-// DateRange Picker
-@import "react-date-range/dist/styles.css";
-@import "react-date-range/dist/theme/default.css";
-
+@import "normalize.css.scss";
 @import "variables.scss";
 @import "typography.scss";
 @import "shared.scss";
@@ -29,4 +22,9 @@ body,
 .main-content-wrapper,
 .page-wrapper {
   height: 100%;
+}
+button {
+  cursor: pointer;
+  background-color: transparent;
+  border: none;
 }

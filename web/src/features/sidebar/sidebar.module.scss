@@ -22,49 +22,30 @@
   top: 0;
   background-color: var(--bg-default);
   padding: 16px;
-}
-
-.titleContainer,
-.sectionTitleContainer {
   display: grid;
   grid-template-columns: 44px auto 44px;
   grid-template-rows: 44px;
   align-items: center;
   gap: 4px;
-}
-.titleContainer {
   flex-grow: 0;
 }
 
-.sectionTitleContainer {
-  border-bottom: 1px solid var(--content-subtle);
-  margin-bottom: 16px;
-}
 .sidebarContent {
   padding: 16px;
   display: flex;
   flex-direction: column;
   flex-grow: 2;
 }
-.sidebarContent,
-.sidebarSectionContent {
+.sidebarContent {
   display: flex;
   flex-direction: column;
   row-gap: 12px;
-}
-.sidebarSectionContent {
-  margin-bottom: 16px;
-  height: 0px;
-  transition: height 200ms;
-  overflow: hidden;
-  transition-timing-function: cubic-bezier(0.25, 0.1, 0.25, 1);
 }
 .expanded {
   height: auto;
   overflow: initial;
 }
 .icon,
-.sidebarIcon,
 .close {
   padding: 8px;
   display: grid;

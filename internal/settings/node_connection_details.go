@@ -1,6 +1,7 @@
 package settings
 
 import (
+	"github.com/cockroachdb/errors"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -17,12 +18,13 @@ func GetConnectionDetails(db *sqlx.DB, allNodes bool, nodeId int) ([]ConnectionD
 	var localNodes []localNode
 	var activeNode localNode
 	var err error
+
 	connectionDetailsList := []ConnectionDetails{}
 	if allNodes {
 		//Get all nodes not disabled and not deleted
 		localNodes, err = getLocalNodeConnectionDetails(db)
 		if err != nil {
-			return []ConnectionDetails{}, err
+			return []ConnectionDetails{}, errors.Wrap(err, "Getting local nodes from db")
 		}
 
 		for _, localNodeDetails := range localNodes {

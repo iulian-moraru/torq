@@ -311,7 +311,7 @@ func addMissingLocalPubkey(ctx context.Context, client lnrpc.LightningClient, gr
 func InitOurNodesList(ctx context.Context, client lnrpc.LightningClient, db *sqlx.DB) (ourNodePubKeys []string, err error) {
 
 	var pubKey *string
-	var grpcAddress string
+	var grpcAddress *string
 
 	q := `select grpc_address, pub_key from local_node;`
 	r, err := db.Query(q)
@@ -320,12 +320,15 @@ func InitOurNodesList(ctx context.Context, client lnrpc.LightningClient, db *sql
 	for r.Next() {
 		err = r.Scan(&grpcAddress, &pubKey)
 		if err != nil {
-			return []string{}, errors.Wrapf(err, "r.Scan(&grpcAddress, &pubKey)")
+			return []string{}, errors.Wrapf(err, "Reading grpc_address and pub_key from db")
 		}
 
+		if grpcAddress == nil || *grpcAddress == "" {
+			continue
+		}
 		// If the pub key is missing from the local_node table, add it.
 		if pubKey == nil || len(*pubKey) == 0 {
-			pubKey, err = addMissingLocalPubkey(ctx, client, grpcAddress, db)
+			pubKey, err = addMissingLocalPubkey(ctx, client, *grpcAddress, db)
 			if err != nil {
 				return []string{}, errors.Wrapf(err, "addMissingLocalPubkey(ctx, client, grpcAddress, db)")
 			}

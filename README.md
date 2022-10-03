@@ -53,8 +53,6 @@ We would also love to hear your ideas for features or any other feedback you mig
 
 ![Torq - Forwards Summary](./forwards-summary.png)
 
-![Torq - Inspect channel](./inspect-channel.png)
-
 ![Torq - Events](./Torq-Events.png)
 
 ![Torq - Flow](./Torq-Flow.png)

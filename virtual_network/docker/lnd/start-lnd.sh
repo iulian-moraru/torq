@@ -70,4 +70,6 @@ exec lnd \
     "--rpclisten=localhost:10009" \
     "--trickledelay=1000" \
     --debuglevel="$DEBUG" \
+    --protocol.wumbo-channels \
+    "--maxchansize=100000000" \
     "$@"

@@ -12,8 +12,10 @@ import (
 	"github.com/lncapital/torq/internal/settings"
 	"github.com/lncapital/torq/pkg/lnd_connect"
 	"github.com/lncapital/torq/pkg/server_errors"
+	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
 	"io"
+	"strings"
 	"time"
 )
 
@@ -25,10 +27,10 @@ type rrpcClientSendPayment interface {
 
 type NewPaymentRequest struct {
 	NodeId           int     `json:"nodeId"`
-	Invoice          string  `json:"invoice"`
+	Invoice          *string `json:"invoice"`
 	TimeOutSecs      int32   `json:"timeoutSecs"`
-	Dest             *[]byte `json:"dest"`
-	AmtMSat          *int64  `json:"amountMsat"`
+	Dest             *string `json:"dest"`
+	AmtMSat          *int64  `json:"amtMSat"`
 	FeeLimitMsat     *int64  `json:"feeLimitMsat"`
 	AllowSelfPayment *bool   `json:"allowSelfPayment"`
 }
@@ -39,39 +41,40 @@ type MppRecord struct {
 }
 
 type hops struct {
-	ChanId           string // Use the CLN format for short chan id
-	Expiry           uint32
-	AmtToForwardMsat int64
-	PubKey           string
-	MppRecord        MppRecord
+	ChanId           string    `json:"chanId"`
+	Expiry           uint32    `json:"expiry"`
+	AmtToForwardMsat int64     `json:"amtToForwardMsat"`
+	PubKey           string    `json:"pubKey"`
+	MppRecord        MppRecord `json:"mppRecord"`
 	// TODO: Imolement AMP record here when needed
 }
 
 type route struct {
-	TotalTimeLock uint32
-	Hops          []hops
-	TotalAmtMsat  int64
+	TotalTimeLock uint32 `json:"totalTimeLock"`
+	Hops          []hops `json:"hops"`
+	TotalAmtMsat  int64  `json:"totalAmtMsat"`
 }
 
 type failureDetails struct {
 	Reason             string `json:"reason"`
-	FailureSourceIndex uint32 `json:"failure_source_index"`
-	Height             uint32 `json:"height,omitempty"`
+	FailureSourceIndex uint32 `json:"failureSourceIndex"`
+	Height             uint32 `json:"height"`
 }
 
 type attempt struct {
-	AttemptId     uint64
-	Status        string
-	Route         route
-	AttemptTimeNs time.Time
-	ResolveTimeNs time.Time
-	Preimage      string
-	Failure       failureDetails
+	AttemptId     uint64         `json:"attemptId"`
+	Status        string         `json:"status"`
+	Route         route          `json:"route"`
+	AttemptTimeNs time.Time      `json:"attemptTimeNs"`
+	ResolveTimeNs time.Time      `json:"resolveTimeNs"`
+	Preimage      string         `json:"preimage"`
+	Failure       failureDetails `json:"failure"`
 }
 type NewPaymentResponse struct {
 	ReqId          string    `json:"reqId"`
 	Type           string    `json:"type"`
 	Status         string    `json:"status"`
+	FailureReason  string    `json:"failureReason"`
 	Hash           string    `json:"hash"`
 	Preimage       string    `json:"preimage"`
 	PaymentRequest string    `json:"paymentRequest"`
@@ -79,6 +82,11 @@ type NewPaymentResponse struct {
 	FeeLimitMsat   int64     `json:"feeLimitMsat"`
 	CreationDate   time.Time `json:"creationDate"`
 	Attempt        attempt   `json:"path"`
+}
+
+type paymentComplete struct {
+	ReqId string `json:"id"`
+	Type  string `json:"type"`
 }
 
 //SendNewPayment - send new payment
@@ -121,18 +129,17 @@ func SendNewPayment(
 	return sendPayment(client, npReq, wChan, reqId)
 }
 
-func newSendPaymentRequest(npReq NewPaymentRequest) (r routerrpc.SendPaymentRequest) {
+func newSendPaymentRequest(npReq NewPaymentRequest) (r routerrpc.SendPaymentRequest, err error) {
 	newPayReq := routerrpc.SendPaymentRequest{
-		PaymentRequest: npReq.Invoice,
 		TimeoutSeconds: npReq.TimeOutSecs,
+	}
+
+	if npReq.Invoice != nil {
+		newPayReq.PaymentRequest = *npReq.Invoice
 	}
 
 	if npReq.FeeLimitMsat != nil {
 		newPayReq.FeeLimitMsat = *npReq.FeeLimitMsat
-	}
-
-	if npReq.Dest != nil {
-		newPayReq.Dest = *npReq.Dest
 	}
 
 	if npReq.AmtMSat != nil {
@@ -142,18 +149,33 @@ func newSendPaymentRequest(npReq NewPaymentRequest) (r routerrpc.SendPaymentRequ
 	if npReq.AllowSelfPayment != nil {
 		newPayReq.AllowSelfPayment = *npReq.AllowSelfPayment
 	}
-	return newPayReq
+
+	// TODO: Add support for Keysend, needs to solve issue related to payment hash generation
+	//if npReq.Dest != nil {
+	//	fmt.Println("It was a keysend")
+	//	destHex, err := hex.DecodeString(*npReq.Dest)
+	//	if err != nil {
+	//		return r, errors.New("Could not decode destination pubkey (keysend)")
+	//	}
+	//	newPayReq.Dest = destHex
+	// //	newPayReq.PaymentHash = make([]byte, 32)
+	//}
+
+	return newPayReq, nil
 }
 
 func sendPayment(client rrpcClientSendPayment, npReq NewPaymentRequest, wChan chan interface{}, reqId string) (err error) {
 
 	// Create and validate payment request details
-	newPayReq := newSendPaymentRequest(npReq)
+	newPayReq, err := newSendPaymentRequest(npReq)
+	if err != nil {
+		return err
+	}
 
 	ctx := context.Background()
 	req, err := client.SendPaymentV2(ctx, &newPayReq)
 	if err != nil {
-		return errors.Newf("Err sending payment: %v", err)
+		return errors.New("Error sending payment")
 	}
 
 	for {
@@ -164,14 +186,26 @@ func sendPayment(client rrpcClientSendPayment, npReq NewPaymentRequest, wChan ch
 		}
 
 		resp, err := req.Recv()
-
-		if err == io.EOF {
-			//log.Debug().Msgf("New payment EOF")
+		switch true {
+		case err == nil:
+			break
+		case err == io.EOF:
 			return nil
-		}
-
-		if err != nil {
-			return errors.Newf("Err sending payment: %v", err)
+		case err != nil && strings.Contains(err.Error(), "AlreadyExists"):
+			return errors.New("ALREADY_PAID")
+		case err != nil && strings.Contains(err.Error(), "UnknownPaymentHash"):
+			return errors.New("INVALID_HASH")
+		case err != nil && strings.Contains(err.Error(), "InvalidPaymentRequest"):
+			return errors.New("INVALID_PAYMENT_REQUEST")
+		case err != nil && strings.Contains(err.Error(), "checksum failed"):
+			return errors.New("CHECKSUM_FAILED")
+		case err != nil && strings.Contains(err.Error(), "amount must be specified when paying a zero amount invoice"):
+			return errors.New("AMOUNT_REQUIRED")
+		case err != nil && strings.Contains(err.Error(), "amount must not be specified when paying a non-zero  amount invoice"):
+			return errors.New("AMOUNT_NOT_ALLOWED")
+		default:
+			log.Error().Msgf("Unknown payment error %v", err)
+			return errors.New("UNKNOWN_ERROR")
 		}
 
 		// Write the payment status to the client
@@ -187,6 +221,7 @@ func processResponse(p *lnrpc.Payment, reqId string) (r NewPaymentResponse) {
 	r.Preimage = p.PaymentPreimage
 	r.AmountMsat = p.ValueMsat
 	r.CreationDate = time.Unix(0, p.CreationTimeNs)
+	r.FailureReason = p.FailureReason.String()
 
 	for _, attempt := range p.GetHtlcs() {
 		r.Attempt.AttemptId = attempt.AttemptId

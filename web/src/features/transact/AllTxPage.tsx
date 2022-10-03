@@ -5,7 +5,7 @@ import {
   ArrowSortDownLines20Regular as SortIcon,
   ColumnTriple20Regular as ColumnsIcon,
 } from "@fluentui/react-icons";
-import Sidebar, { SidebarSection } from "../sidebar/Sidebar";
+import Sidebar from "../sidebar/Sidebar";
 import TablePageTemplate, {
   TableControlSection,
   TableControlsButton,
@@ -13,6 +13,7 @@ import TablePageTemplate, {
 } from "../templates/tablePageTemplate/TablePageTemplate";
 import { useState } from "react";
 import TransactTabs from "./TransactTabs";
+import { SectionContainer } from "../section/SectionContainer";
 
 type sections = {
   filter: boolean;
@@ -87,30 +88,30 @@ function AllTxPage() {
 
   const sidebar = (
     <Sidebar title={"Options"} closeSidebarHandler={closeSidebarHandler()}>
-      <SidebarSection
+      <SectionContainer
         title={"Columns"}
         icon={ColumnsIcon}
         expanded={activeSidebarSections.columns}
         handleToggle={sidebarSectionHandler("columns")}
       >
         {"Something"}
-      </SidebarSection>
-      <SidebarSection
+      </SectionContainer>
+      <SectionContainer
         title={"Filter"}
         icon={FilterIcon}
         expanded={activeSidebarSections.filter}
         handleToggle={sidebarSectionHandler("filter")}
       >
         {"Something"}
-      </SidebarSection>
-      <SidebarSection
+      </SectionContainer>
+      <SectionContainer
         title={"Sort"}
         icon={SortIcon}
         expanded={activeSidebarSections.sort}
         handleToggle={sidebarSectionHandler("sort")}
       >
         {"Something"}
-      </SidebarSection>
+      </SectionContainer>
     </Sidebar>
   );
 
