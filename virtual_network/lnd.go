@@ -11,7 +11,7 @@ import (
 )
 
 const defautDelayMS = 2000          // 2s
-const defaultMaxDurationMS = 120000 // 60s
+const defaultMaxDurationMS = 120000 // 120s
 
 type channel struct {
 	Active                bool          `json:"active,omitempty"`

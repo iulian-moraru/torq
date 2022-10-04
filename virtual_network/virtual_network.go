@@ -7,6 +7,7 @@ import (
 	"github.com/docker/docker/client"
 	"log"
 	"math/rand"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -347,13 +348,15 @@ func CreateNewVirtualNetwork(name string, createDatabase bool, purge bool) error
 	}
 
 	log.Println("Building btcd image from dockerfile")
-	err = de.BuildImage(ctx, "virtual_network/docker/btcd/", name+"/btcd")
+	btcdPath, _ := filepath.Abs("virtual_network/docker/btcd/")
+	err = de.BuildImage(ctx, btcdPath, name+"/btcd")
 	if err != nil {
 		return errors.Newf("building image: %v\n", err)
 	}
 
 	log.Println("Building lnd image from dockerfile")
-	de.BuildImage(ctx, "virtual_network/docker/lnd/", name+"/lnd")
+	lndPath, _ := filepath.Abs("virtual_network/docker/lnd/")
+	err = de.BuildImage(ctx, lndPath, name+"/lnd")
 	if err != nil {
 		return errors.Newf("building image: %v\n", err)
 	}
@@ -1112,7 +1115,7 @@ func createPayInvoice(name string, invfrq int, ctx context.Context, de DockerDev
 		log.Printf("%v paying invoice to %v", peer2.Name, peer1.Name)
 		err = PayInvoice(ctx, de.Client, peer2.Instance, newInvoice)
 		if err != nil {
-			log.Println("Sending payment: %v", err)
+			log.Printf("Sending payment: %v\n", err)
 			continue
 		}
 		err = MineBlocks(ctx, de.Client, btcdConf.Instance, 6)

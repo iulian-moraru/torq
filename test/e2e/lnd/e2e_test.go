@@ -12,6 +12,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -161,14 +162,26 @@ func TestMain(m *testing.M) {
 	}
 
 	log.Println("Building Torq image")
+	rootPath, _ := filepath.Abs("../../../")
 	// path to Dockerfile in root of project
-	de.BuildImage(ctx, "../../../", "e2e/torq")
+	err = de.BuildImage(ctx, rootPath, "e2e/torq")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	log.Println("Building btcd image from dockerfile")
-	de.BuildImage(ctx, "../../../virtual_network/docker/btcd/", "e2e/btcd")
+	btcdPath, _ := filepath.Abs("../../../virtual_network/docker/btcd/")
+	err = de.BuildImage(ctx, btcdPath, "e2e/btcd")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	log.Println("Building lnd image from dockerfile")
-	de.BuildImage(ctx, "../../../virtual_network/docker/lnd/", "e2e/lnd")
+	lndPath, _ := filepath.Abs("../../../virtual_network/docker/lnd/")
+	err = de.BuildImage(ctx, lndPath, "e2e/lnd")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	log.Println("Starting btcd")
 	err = de.InitContainer(ctx, btcdConf)

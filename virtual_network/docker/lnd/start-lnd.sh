@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env /bin/bash
 
 # Copied from: https://github.com/lightningnetwork/lnd/blob/master/docker/lnd/start-lnd.sh
 

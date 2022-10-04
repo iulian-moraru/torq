@@ -165,6 +165,11 @@ WHERE NOT EXISTS (
 
 func insertRoutingPolicy(db *sqlx.DB, ts time.Time, outbound bool, cu *lnrpc.ChannelEdgeUpdate) error {
 
+	if cu == nil || cu.RoutingPolicy == nil {
+		log.Warn().Msg("Routing policy nil, skipping")
+		return nil
+	}
+
 	cp, err := chanPointFromByte(cu.ChanPoint.GetFundingTxidBytes(), cu.ChanPoint.GetOutputIndex())
 	if err != nil {
 		return errors.Wrapf(err, "insertRoutingPolicy -> getChanPoint(%v, %d)",
