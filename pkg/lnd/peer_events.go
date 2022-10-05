@@ -23,7 +23,6 @@ func SubscribePeerEvents(ctx context.Context, client peerEventsClient, wsChan ch
 	peerEventStream, err := client.SubscribePeerEvents(ctx, &lnrpc.PeerEventSubscription{})
 
 	if err != nil {
-		log.Error().Msgf("subscribe and store invoices - lnrpc subscribe:  %v", err)
 		return errors.Wrap(err, "lnrpc subscribe invoices")
 	}
 
@@ -41,7 +40,6 @@ func SubscribePeerEvents(ctx context.Context, client peerEventsClient, wsChan ch
 
 		if err != nil {
 			if errors.Is(ctx.Err(), context.Canceled) {
-				log.Error().Msgf("Peer events subscription - Context canceled")
 				break
 			}
 			log.Error().Msgf("Peer events subscription err: %v", err)
